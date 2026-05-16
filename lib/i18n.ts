@@ -111,7 +111,7 @@ export const T: Record<Locale, Dict> = {
     zodiac: "Знак зодіаку",
     name: "Ім'я",
     namePlaceholder: "Дай ім'я",
-    walkUp: "Підійти",
+    walkUp: "Починаємо",
     talk: "Говорити",
     stop: "Стоп",
     tapToSpeak: "Натисни щоб говорити",
