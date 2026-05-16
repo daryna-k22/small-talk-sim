@@ -1,5 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import type { TranscriptLine } from "@/lib/analytics";
+import type { Locale } from "@/lib/i18n";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -25,6 +26,7 @@ type Body = {
   characterName: string;
   characterPersona: string;
   scene: string;
+  locale?: Locale;
 };
 
 export async function POST(req: Request) {
@@ -46,6 +48,12 @@ export async function POST(req: Request) {
   const characterName = (body.characterName || "Them").trim();
   const characterPersona = (body.characterPersona || "Stranger").trim();
   const scene = (body.scene || "a tech afterparty").trim();
+  const locale: Locale = body.locale === "uk" ? "uk" : "en";
+  const languageName = locale === "uk" ? "Ukrainian" : "English";
+  const fillerList =
+    locale === "uk"
+      ? "ну, типу, як би, коротше, в принципі, такий, оце"
+      : "um, uh, like, you know, so, yeah, I mean, kind of, sort of, basically, literally";
 
   const transcriptText = body.transcript
     .map((t) => (t.role === "user" ? `User: ${t.content}` : `${characterName}: ${t.content}`))
@@ -58,12 +66,35 @@ ${transcriptText}
 
 Return ONLY valid JSON. No markdown fences. No explanation. Just JSON.
 
-Rules:
-- Filler words to count: um, uh, like, you know, so, yeah, I mean, kind of, sort of, basically, literally
-- Quote EXACT user phrases, never paraphrase
-- Best/worst moments must be DIFFERENT quotes
-- Phrase improvements: 2-3 items, focus on most impactful
-- Be brutally honest in inner thought — that's the wow moment. Speak as ${characterName} in first person, reference what the user actually said. Not flattering. Can be savage if deserved.`;
+SCORING RUBRIC — be calibrated and fair, not harsh:
+- 80-100: Excellent. Thoughtful questions, genuine curiosity, balanced talking, minimal fillers, natural flow.
+- 60-79: Good. Solid conversation with highlights. Some filler words or missed opportunities but overall engaging.
+- 40-59: Mixed. Decent moments but clear weaknesses.
+- 20-39: Struggling. One-sided or forced.
+- 0-19: RARE — only for rude, incoherent, or fewer than 2 real exchanges.
+
+Average user gets 55-70. Below 40 requires real problems. Below 20 should be exceptional.
+
+Don't punish non-native speakers for grammar — score INTENT and ENGAGEMENT, not linguistic perfection. Imperfect grammar with genuine curiosity scores HIGHER than perfect grammar with self-centered monologue. Find strengths even in flawed conversations. Any genuine question = points. Personal sharing = points. Effort = points.
+
+LANGUAGE: Generate ALL output text fields (verdict, why, reasons, character_inner_thought, phrase improvements) in ${languageName}. Field keys stay English. The character_inner_thought MUST be in ${languageName}. Filler words detection is language-specific.
+
+Filler words to count (${languageName}): ${fillerList}.
+
+Inner thought rules:
+- Be honest but NOT cruel. Sarcastic if ${characterName} is sarcastic, kindly direct if warm — but NEVER demoralizing.
+- Roast specific moments, not the whole person.
+- End on a warmer note if user clearly made effort.
+- Speak as ${characterName} in first person, reference what the user actually said.
+
+Phrase improvement rules:
+- Only suggest where original was genuinely weak. Don't nitpick grammar from non-native speakers if meaning was clear.
+- Focus on STRATEGIC improvements (self-centered → curious, vague → specific) over grammatical ones.
+- Max 3 improvements.
+
+Other rules:
+- Quote EXACT user phrases, never paraphrase.
+- Best/worst moments must be DIFFERENT quotes.`;
 
   const ai = new GoogleGenAI({ apiKey });
 

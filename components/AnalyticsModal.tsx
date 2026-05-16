@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import type { Analytics } from "@/lib/analytics";
+import { T, type Locale } from "@/lib/i18n";
 
 type Props = {
   analytics: Analytics | null;
@@ -9,6 +10,7 @@ type Props = {
   error: string | null;
   characterName: string;
   avatarUrl: string;
+  locale: Locale;
   onClose: () => void;
   onTryAgain: () => void;
   onNewCharacter: () => void;
@@ -38,10 +40,12 @@ export default function AnalyticsModal({
   error,
   characterName,
   avatarUrl,
+  locale,
   onClose,
   onTryAgain,
   onNewCharacter,
 }: Props) {
+  const t = T[locale];
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -69,22 +73,20 @@ export default function AnalyticsModal({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={avatarUrl} alt={characterName} className="mb-4 h-20 w-20 rounded-full bg-zinc-100 dark:bg-zinc-900" />
             <div className="h-8 w-8 mb-4 animate-spin rounded-full border-2 border-zinc-200 border-t-zinc-900 dark:border-zinc-800 dark:border-t-zinc-100" />
-            <div className="text-sm text-zinc-500">
-              {characterName} is thinking about your conversation…
-            </div>
+            <div className="text-sm text-zinc-500">{t.aThinkingAbout(characterName)}</div>
           </div>
         )}
 
         {!loading && error && (
           <div className="px-6 py-12 text-center">
-            <div className="mb-3 text-sm font-medium text-red-600 dark:text-red-300">Couldn&apos;t load analytics</div>
+            <div className="mb-3 text-sm font-medium text-red-600 dark:text-red-300">{t.aCouldntLoad}</div>
             <div className="mb-6 text-xs text-zinc-500">{error}</div>
             <div className="flex justify-center gap-2">
               <button onClick={onTryAgain} className="rounded-xl border border-zinc-300 px-4 py-2 text-sm font-medium dark:border-zinc-700">
-                Try again
+                {t.aTryAgain}
               </button>
               <button onClick={onNewCharacter} className="rounded-xl bg-black px-5 py-2 text-sm font-medium text-white dark:bg-white dark:text-black">
-                New character
+                {t.aNewCharacter}
               </button>
             </div>
           </div>
@@ -106,18 +108,18 @@ export default function AnalyticsModal({
             {/* 2. Stats row */}
             <div className="mb-6 grid grid-cols-3 gap-2">
               <div className="rounded-xl bg-zinc-100 px-3 py-2 text-center dark:bg-zinc-900">
-                <div className="text-[10px] uppercase tracking-wide text-zinc-500">Talk ratio</div>
+                <div className="text-[10px] uppercase tracking-wide text-zinc-500">{t.aTalkRatio}</div>
                 <div className="text-sm font-semibold">
-                  You {analytics.talk_ratio.user}% · {characterName} {analytics.talk_ratio.character}%
+                  {t.aTalkRatioValue(analytics.talk_ratio.user, characterName, analytics.talk_ratio.character)}
                 </div>
               </div>
               <div className="rounded-xl bg-zinc-100 px-3 py-2 text-center dark:bg-zinc-900">
-                <div className="text-[10px] uppercase tracking-wide text-zinc-500">Curiosity</div>
-                <div className="text-sm font-semibold">{analytics.questions_asked_by_user} questions</div>
+                <div className="text-[10px] uppercase tracking-wide text-zinc-500">{t.aCuriosity}</div>
+                <div className="text-sm font-semibold">{t.aQuestions(analytics.questions_asked_by_user)}</div>
               </div>
               <div className={`rounded-xl px-3 py-2 text-center ${fillerTotalColor(totalFillers)}`}>
-                <div className="text-[10px] uppercase tracking-wide opacity-70">Fillers</div>
-                <div className="text-sm font-semibold">{totalFillers} total</div>
+                <div className="text-[10px] uppercase tracking-wide opacity-70">{t.aFillers}</div>
+                <div className="text-sm font-semibold">{t.aFillersValue(totalFillers)}</div>
               </div>
             </div>
 
@@ -128,7 +130,7 @@ export default function AnalyticsModal({
                 <img src={avatarUrl} alt={characterName} className="h-12 w-12 flex-shrink-0 rounded-full bg-white dark:bg-zinc-950" />
                 <div className="flex-1">
                   <div className="mb-1 text-[10px] uppercase tracking-wide text-zinc-500">
-                    What {characterName} really thought
+                    {t.aThoughtLabel(characterName)}
                   </div>
                   <blockquote className="text-base italic leading-relaxed text-zinc-900 dark:text-zinc-100">
                     “{analytics.character_inner_thought}”
@@ -141,7 +143,7 @@ export default function AnalyticsModal({
             <div className="mb-6 grid gap-3 sm:grid-cols-2">
               <div className="rounded-xl border-l-4 border-emerald-500 bg-emerald-50/40 p-3 dark:bg-emerald-950/30">
                 <div className="mb-1 flex items-center gap-1 text-xs font-medium text-emerald-700 dark:text-emerald-300">
-                  <span>✓</span> Best moment
+                  <span>✓</span> {t.aBest}
                 </div>
                 <blockquote className="mb-1 text-sm text-zinc-900 dark:text-zinc-100">
                   &ldquo;{analytics.best_moment.user_quote}&rdquo;
@@ -150,7 +152,7 @@ export default function AnalyticsModal({
               </div>
               <div className="rounded-xl border-l-4 border-red-500 bg-red-50/40 p-3 dark:bg-red-950/30">
                 <div className="mb-1 flex items-center gap-1 text-xs font-medium text-red-700 dark:text-red-300">
-                  <span>✗</span> Worst moment
+                  <span>✗</span> {t.aWorst}
                 </div>
                 <blockquote className="mb-1 text-sm text-zinc-900 dark:text-zinc-100">
                   &ldquo;{analytics.worst_moment.user_quote}&rdquo;
@@ -163,7 +165,7 @@ export default function AnalyticsModal({
             {analytics.filler_words.length > 0 && (
               <div className="mb-6">
                 <div className="mb-2 text-xs font-medium text-zinc-500 uppercase tracking-wide">
-                  Filler words detected
+                  {t.aFillersDetected}
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {analytics.filler_words.map((f, i) => (
@@ -182,7 +184,7 @@ export default function AnalyticsModal({
             {analytics.phrase_improvements.length > 0 && (
               <div className="mb-6">
                 <div className="mb-2 text-xs font-medium text-zinc-500 uppercase tracking-wide">
-                  Try saying instead
+                  {t.aTrySaying}
                 </div>
                 <div className="space-y-3">
                   {analytics.phrase_improvements.map((p, i) => (
@@ -208,13 +210,13 @@ export default function AnalyticsModal({
                 onClick={onTryAgain}
                 className="rounded-xl bg-black px-4 py-3 text-sm font-medium text-white dark:bg-white dark:text-black"
               >
-                Try again
+                {t.aTryAgain}
               </button>
               <button
                 onClick={onNewCharacter}
                 className="rounded-xl border border-zinc-300 px-4 py-3 text-sm font-medium dark:border-zinc-700"
               >
-                New character
+                {t.aNewCharacter}
               </button>
             </div>
           </div>

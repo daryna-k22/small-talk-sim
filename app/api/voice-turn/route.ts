@@ -7,6 +7,7 @@ import {
   type CharacterId,
   type Zodiac,
 } from "@/lib/characters";
+import type { Locale } from "@/lib/i18n";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -20,16 +21,28 @@ const VALID_ZODIACS = new Set(ZODIACS.map((z) => z.id));
 
 const UNICODE_ESCAPE = /\\u([0-9a-fA-F]{4})/g;
 
-const USER_GOODBYE_RE =
+const USER_GOODBYE_RE_EN =
   /\b(i\s+(need|gotta|have|got)\s+to\s+(go|leave|run)|gotta\s+(go|run)|need\s+to\s+head\s+out|bye\b|goodbye|see\s+(you|ya)|nice\s+(talking|chatting)|good\s+(talking|chatting)|catch\s+you\s+later|take\s+care|have\s+a\s+(good|nice)\s+(one|night|evening))/i;
 
-const CHAR_GOODBYE_RE =
+const CHAR_GOODBYE_RE_EN =
   /\b(grab\s+(another|a)?\s*drink|see\s+my\s+friend|i'?ll\s+catch\s+you|brb|good\s+(talking|chatting)|catch\s+you\s+later|i\s+(need|gotta|have)\s+to\s+(go|run|head)|excuse\s+me)/i;
 
-const CANNED_GOODBYES = [
+const USER_GOODBYE_RE_UK =
+  /(бувай|до\s+зустріч|па-?па|побіг|треба\s+(йти|бігти)|маю\s+(йти|бігти)|приємно\s+було|на\s+цьому\s+все|ну\s+все|до\s+побачен)/i;
+
+const CHAR_GOODBYE_RE_UK =
+  /(піду|побіг|треба\s+(йти|бігти)|маю\s+йти|приємно\s+(було|поговорили)|перепрошую|вибач|зараз\s+підійду)/i;
+
+const CANNED_GOODBYES_EN = [
   "Take care! Lovely meeting you.",
   "Same here — have a good one!",
   "Cheers, catch you around!",
+];
+
+const CANNED_GOODBYES_UK = [
+  "Бувай! Було приємно поспілкуватись.",
+  "Тримай п'ять — гарного вечора!",
+  "До зустрічі, ще побачимось!",
 ];
 
 function deepUnescape(value: unknown): unknown {
@@ -61,6 +74,8 @@ export async function POST(req: Request) {
   const characterName = (form.get("characterName") as string | null) ?? "";
   const ageGroupRaw = form.get("ageGroup") as string | null;
   const zodiacRaw = form.get("zodiac") as string | null;
+  const localeRaw = (form.get("locale") as string | null) ?? "en";
+  const locale: Locale = localeRaw === "uk" ? "uk" : "en";
   const historyJson = (form.get("history") as string | null) ?? "[]";
 
   if (!(audio instanceof Blob) || audio.size === 0) {
@@ -104,7 +119,15 @@ export async function POST(req: Request) {
 
   const personaPrompt = character.systemPrompt({ name: finalName, ageGroup, zodiac });
 
+  const languageName = locale === "uk" ? "Ukrainian" : "English";
+  const fillerExamples =
+    locale === "uk"
+      ? '"ну", "типу", "як би", "коротше", "в принципі", "такий", "оце"'
+      : '"um", "uh", "like", "you know"';
+
   const taskPrompt = `${personaPrompt}
+
+LANGUAGE: The user is speaking in ${languageName}. Transcribe the audio in ${languageName}. Your character_reply MUST also be in ${languageName}. The exit_reason MUST be in ${languageName}. Stay in character regardless of language.
 
 Conversation so far:
 ${historyText}
@@ -113,11 +136,11 @@ Exchange count: ${userTurnsSoFar} user messages and ${characterTurnsSoFar} of yo
 Rules: should_exit MUST be false while user message # is below 6. Between 6 and 8, only exit if user is repeatedly vague/closed-off/self-centered. By user message #10, you must find a natural reason to wrap up (should_exit=true) regardless of how it's going.
 
 The user just said something — listen to the attached audio. Then produce a JSON response with:
-- transcript: faithful transcription of what the user said (English).
-- voice_analysis: confidence ("low"|"medium"|"high"), energy ("low"|"medium"|"high"), filler_words (array of literal fillers heard like "um", "uh", "like", "you know"), notable_tone (one short sentence — e.g. "rehearsed", "warm", "anxious", "flat").
-- character_reply: your in-character reply, max 2 sentences, plain speech only.
+- transcript: faithful transcription of what the user said, in ${languageName}.
+- voice_analysis: confidence ("low"|"medium"|"high"), energy ("low"|"medium"|"high"), filler_words (array of literal fillers heard like ${fillerExamples}), notable_tone (one short sentence in English — e.g. "rehearsed", "warm", "anxious", "flat").
+- character_reply: your in-character reply in ${languageName}, max 2 sentences, plain speech only.
 - should_exit: true ONLY if the last two user turns (including this one) have been low-energy/vague/closed-off; otherwise false.
-- exit_reason: if should_exit is true, a one-sentence in-character explanation. Otherwise empty string.
+- exit_reason: if should_exit is true, a one-sentence in-character explanation in ${languageName}. Otherwise empty string.
 
 Stay strictly in character as ${finalName}. Never break character. Never narrate actions.`;
 
@@ -184,12 +207,17 @@ Stay strictly in character as ${finalName}. Never break character. Never narrate
     const transcript = (decoded.transcript ?? "").trim();
     const characterReply = (decoded.character_reply ?? "").trim();
 
-    if (transcript && USER_GOODBYE_RE.test(transcript)) {
-      const canned = CANNED_GOODBYES[Math.floor(Math.random() * CANNED_GOODBYES.length)];
+    const userGoodbyeRe = locale === "uk" ? USER_GOODBYE_RE_UK : USER_GOODBYE_RE_EN;
+    const charGoodbyeRe = locale === "uk" ? CHAR_GOODBYE_RE_UK : CHAR_GOODBYE_RE_EN;
+    const cannedGoodbyes = locale === "uk" ? CANNED_GOODBYES_UK : CANNED_GOODBYES_EN;
+    const fallbackExit = locale === "uk" ? "Ви попрощались." : "You said your goodbyes.";
+
+    if (transcript && userGoodbyeRe.test(transcript)) {
+      const canned = cannedGoodbyes[Math.floor(Math.random() * cannedGoodbyes.length)];
       decoded.character_reply = canned;
       decoded.should_exit = true;
-      decoded.exit_reason = decoded.exit_reason || "You said your goodbyes.";
-    } else if (characterReply && CHAR_GOODBYE_RE.test(characterReply)) {
+      decoded.exit_reason = decoded.exit_reason || fallbackExit;
+    } else if (characterReply && charGoodbyeRe.test(characterReply)) {
       decoded.should_exit = true;
       decoded.exit_reason = decoded.exit_reason || characterReply;
     }

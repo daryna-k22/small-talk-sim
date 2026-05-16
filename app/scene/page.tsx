@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AGE_GROUPS, CHARACTERS, ZODIACS, avatarUrl } from "@/lib/characters";
+import { CHARACTERS, ZODIACS, avatarUrl } from "@/lib/characters";
 import { loadSession, saveSession, type Session, type Turn } from "@/lib/session";
 import type { Analytics, TranscriptLine } from "@/lib/analytics";
+import { T, type Locale } from "@/lib/i18n";
 import AnalyticsModal from "@/components/AnalyticsModal";
 
 type Status = "idle" | "recording" | "thinking" | "speaking" | "ended";
@@ -48,10 +49,36 @@ const FEMALE_VOICE_NAMES = [
   "Microsoft Zira",
 ];
 
-const MALE_PATTERN = /\b(male|man|guy|david|john|james|daniel|alex|aaron|fred|tony|davis)\b/i;
-const FEMALE_PATTERN = /\b(female|woman|girl|aria|jenny|samantha|karen|victoria|emma|zira)\b/i;
+const MALE_PATTERN = /\b(male|man|guy|david|john|james|daniel|alex|aaron|fred|tony|davis|anatol|ostap)\b/i;
+const FEMALE_PATTERN = /\b(female|woman|girl|aria|jenny|samantha|karen|victoria|emma|zira|lesya|solomiya|polina)\b/i;
 
-function pickEnglishVoice(voices: SpeechSynthesisVoice[], isHim: boolean): SpeechSynthesisVoice | null {
+const UK_MALE_VOICE_NAMES = ["Anatol", "Ostap"];
+const UK_FEMALE_VOICE_NAMES = ["Lesya", "Solomiya", "Polina"];
+
+function pickVoice(
+  voices: SpeechSynthesisVoice[],
+  isHim: boolean,
+  locale: Locale,
+): SpeechSynthesisVoice | null {
+  if (locale === "uk") {
+    const uk = voices.filter((v) => v.lang.startsWith("uk"));
+    if (uk.length > 0) {
+      const candidates = isHim ? UK_MALE_VOICE_NAMES : UK_FEMALE_VOICE_NAMES;
+      for (const name of candidates) {
+        const found = uk.find((v) => v.name.includes(name));
+        if (found) return found;
+      }
+      const heuristic = uk.find((v) =>
+        isHim
+          ? MALE_PATTERN.test(v.name) && !FEMALE_PATTERN.test(v.name)
+          : FEMALE_PATTERN.test(v.name),
+      );
+      if (heuristic) return heuristic;
+      return uk[0];
+    }
+    console.warn("No Ukrainian TTS voice available, falling back to English");
+  }
+
   const en = voices.filter((v) => v.lang.startsWith("en-"));
   if (en.length === 0) return null;
 
@@ -71,7 +98,7 @@ function pickEnglishVoice(voices: SpeechSynthesisVoice[], isHim: boolean): Speec
   return en.find((v) => v.lang === "en-US") ?? en[0];
 }
 
-function speakReply(text: string, isHim: boolean): Promise<void> {
+function speakReply(text: string, isHim: boolean, locale: Locale): Promise<void> {
   return new Promise((resolve) => {
     if (typeof window === "undefined" || !window.speechSynthesis) {
       resolve();
@@ -80,9 +107,9 @@ function speakReply(text: string, isHim: boolean): Promise<void> {
     const synth = window.speechSynthesis;
 
     const trySpeak = () => {
-      const voice = pickEnglishVoice(synth.getVoices(), isHim);
+      const voice = pickVoice(synth.getVoices(), isHim, locale);
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = "en-US";
+      utterance.lang = locale === "uk" && voice?.lang.startsWith("uk") ? "uk-UA" : "en-US";
       utterance.rate = 1.0;
       utterance.pitch = 1.0;
       if (voice) utterance.voice = voice;
@@ -134,8 +161,9 @@ export default function ScenePage() {
       router.replace("/");
       return;
     }
-    setSession(s);
-    if (s.ended) setStatus("ended");
+    const withLocale: Session = { ...s, locale: s.locale ?? "en" };
+    setSession(withLocale);
+    if (withLocale.ended) setStatus("ended");
   }, [router]);
 
   const fetchAnalytics = async (sessionForAnalytics: Session) => {
@@ -155,6 +183,7 @@ export default function ScenePage() {
           characterName: sessionForAnalytics.characterName,
           characterPersona: persona,
           scene: "a tech afterparty",
+          locale: sessionForAnalytics.locale,
         }),
       });
       if (!res.ok) {
@@ -271,6 +300,7 @@ export default function ScenePage() {
       form.append("characterName", session.characterName);
       form.append("ageGroup", session.ageGroup);
       form.append("zodiac", session.zodiac);
+      form.append("locale", session.locale);
       form.append(
         "history",
         JSON.stringify(session.turns.map((t) => ({ speaker: t.speaker, text: t.text }))),
@@ -306,7 +336,7 @@ export default function ScenePage() {
       saveSession(updated);
 
       setStatus("speaking");
-      await speakReply(data.character_reply, session.characterId === "max");
+      await speakReply(data.character_reply, session.characterId === "max", session.locale);
       if (ended) {
         setStatus("ended");
       } else {
@@ -330,6 +360,7 @@ export default function ScenePage() {
       characterName: session.characterName,
       ageGroup: session.ageGroup,
       zodiac: session.zodiac,
+      locale: session.locale,
       turns: [],
       ended: false,
     };
@@ -346,7 +377,9 @@ export default function ScenePage() {
     return <main className="flex-1 flex items-center justify-center text-zinc-500">Loading…</main>;
   }
 
-  const ageLabel = AGE_GROUPS.find((g) => g.id === session.ageGroup)?.label ?? session.ageGroup;
+  const t = T[session.locale];
+  const ageLabel =
+    session.ageGroup === "young" ? t.ageYoung : session.ageGroup === "mid" ? t.ageMid : t.ageOlder;
   const zodiacLabel = ZODIACS.find((z) => z.id === session.zodiac)?.label ?? session.zodiac;
   const showModal = status === "ended" && session.turns.length > 0;
 
@@ -357,17 +390,17 @@ export default function ScenePage() {
         <img src={avatarUrl(session.characterId)} alt={session.characterName} className="h-14 w-14 rounded-full bg-zinc-100 dark:bg-zinc-900" />
         <div>
           <div className="font-semibold">{session.characterName}</div>
-          <div className="text-xs text-zinc-500">{ageLabel} · {zodiacLabel} · Afterparty</div>
+          <div className="text-xs text-zinc-500">{ageLabel} · {zodiacLabel} · {t.afterparty}</div>
         </div>
         <button onClick={handleNewCharacter} className="ml-auto text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">
-          Restart
+          {t.restart}
         </button>
       </header>
 
       <div className="flex-1 overflow-y-auto space-y-3 mb-6">
         {session.turns.length === 0 && (
           <div className="text-center text-sm text-zinc-500 py-12">
-            Tap the mic to say hi. They&apos;re right in front of you.
+            {t.emptyState}
           </div>
         )}
         {session.turns.map((t, i) => (
@@ -407,13 +440,13 @@ export default function ScenePage() {
                 : "bg-black dark:bg-white dark:text-black"
             }`}
           >
-            {status === "recording" ? "Stop" : status === "speaking" ? "…" : "Talk"}
+            {status === "recording" ? t.stop : status === "speaking" ? "…" : t.talk}
           </button>
           <div className="text-xs text-zinc-500 h-4">
-            {status === "recording" && "Recording… (auto-stops after 3s silence)"}
-            {status === "thinking" && "Listening to you…"}
-            {status === "speaking" && "They're replying…"}
-            {status === "idle" && "Tap to speak"}
+            {status === "recording" && t.recordingHint}
+            {status === "thinking" && t.thinkingHint}
+            {status === "speaking" && t.speakingHint}
+            {status === "idle" && t.tapToSpeak}
           </div>
         </div>
       )}
@@ -425,6 +458,7 @@ export default function ScenePage() {
           error={analyticsError}
           characterName={session.characterName}
           avatarUrl={avatarUrl(session.characterId)}
+          locale={session.locale}
           onClose={handleNewCharacter}
           onTryAgain={handleTryAgain}
           onNewCharacter={handleNewCharacter}
