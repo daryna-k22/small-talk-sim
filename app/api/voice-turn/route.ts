@@ -20,6 +20,18 @@ const VALID_ZODIACS = new Set(ZODIACS.map((z) => z.id));
 
 const UNICODE_ESCAPE = /\\u([0-9a-fA-F]{4})/g;
 
+const USER_GOODBYE_RE =
+  /\b(i\s+(need|gotta|have|got)\s+to\s+(go|leave|run)|gotta\s+(go|run)|need\s+to\s+head\s+out|bye\b|goodbye|see\s+(you|ya)|nice\s+(talking|chatting)|good\s+(talking|chatting)|catch\s+you\s+later|take\s+care|have\s+a\s+(good|nice)\s+(one|night|evening))/i;
+
+const CHAR_GOODBYE_RE =
+  /\b(grab\s+(another|a)?\s*drink|see\s+my\s+friend|i'?ll\s+catch\s+you|brb|good\s+(talking|chatting)|catch\s+you\s+later|i\s+(need|gotta|have)\s+to\s+(go|run|head)|excuse\s+me)/i;
+
+const CANNED_GOODBYES = [
+  "Take care! Lovely meeting you.",
+  "Same here — have a good one!",
+  "Cheers, catch you around!",
+];
+
 function deepUnescape(value: unknown): unknown {
   if (typeof value === "string") {
     return value.replace(UNICODE_ESCAPE, (_, code) => String.fromCharCode(parseInt(code, 16)));
@@ -161,7 +173,28 @@ Stay strictly in character as ${finalName}. Never break character. Never narrate
     } catch {
       return Response.json({ error: "model returned invalid JSON", detail: text }, { status: 502 });
     }
-    return Response.json(deepUnescape(parsed));
+    const decoded = deepUnescape(parsed) as {
+      transcript?: string;
+      character_reply?: string;
+      should_exit?: boolean;
+      exit_reason?: string;
+      [key: string]: unknown;
+    };
+
+    const transcript = (decoded.transcript ?? "").trim();
+    const characterReply = (decoded.character_reply ?? "").trim();
+
+    if (transcript && USER_GOODBYE_RE.test(transcript)) {
+      const canned = CANNED_GOODBYES[Math.floor(Math.random() * CANNED_GOODBYES.length)];
+      decoded.character_reply = canned;
+      decoded.should_exit = true;
+      decoded.exit_reason = decoded.exit_reason || "You said your goodbyes.";
+    } else if (characterReply && CHAR_GOODBYE_RE.test(characterReply)) {
+      decoded.should_exit = true;
+      decoded.exit_reason = decoded.exit_reason || characterReply;
+    }
+
+    return Response.json(decoded);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     return Response.json({ error: "gemini call failed", detail: message }, { status: 502 });

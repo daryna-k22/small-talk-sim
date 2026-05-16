@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CHARACTERS, avatarUrl } from "@/lib/characters";
 import { loadSession, saveSession, type Session, type Turn } from "@/lib/session";
+import type { Analytics, TranscriptLine } from "@/lib/analytics";
+import AnalyticsModal from "@/components/AnalyticsModal";
 
 type Status = "idle" | "recording" | "thinking" | "speaking" | "ended";
 
@@ -83,11 +85,15 @@ export default function ScenePage() {
   const [session, setSession] = useState<Session | null>(null);
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
+  const [analytics, setAnalytics] = useState<Analytics | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [analyticsError, setAnalyticsError] = useState<string | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const vadIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const analyticsRequestedRef = useRef(false);
 
   useEffect(() => {
     const s = loadSession();
@@ -99,6 +105,45 @@ export default function ScenePage() {
     setSession(s);
     if (s.ended) setStatus("ended");
   }, [router]);
+
+  const fetchAnalytics = async (sessionForAnalytics: Session) => {
+    setAnalyticsLoading(true);
+    setAnalyticsError(null);
+    try {
+      const transcript: TranscriptLine[] = sessionForAnalytics.turns.map((t) => ({
+        role: t.speaker,
+        content: t.text,
+      }));
+      const persona = CHARACTERS[sessionForAnalytics.characterId].role;
+      const res = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          transcript,
+          characterName: sessionForAnalytics.characterName,
+          characterPersona: persona,
+          scene: "a tech afterparty",
+        }),
+      });
+      if (!res.ok) {
+        const txt = await res.text();
+        throw new Error(txt);
+      }
+      const data = (await res.json()) as Analytics;
+      setAnalytics(data);
+    } catch (e) {
+      setAnalyticsError(e instanceof Error ? e.message : "analytics failed");
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (status !== "ended" || !session || analyticsRequestedRef.current) return;
+    if (session.turns.length === 0) return;
+    analyticsRequestedRef.current = true;
+    void fetchAnalytics(session);
+  }, [status, session]);
 
   const cleanupRecording = () => {
     if (vadIntervalRef.current) {
@@ -231,8 +276,6 @@ export default function ScenePage() {
       setStatus("speaking");
       await speakReply(data.character_reply);
       if (ended) {
-        const exitLine = data.exit_reason || "They walked away.";
-        await speakReply(exitLine);
         setStatus("ended");
       } else {
         setStatus("idle");
@@ -243,9 +286,28 @@ export default function ScenePage() {
     }
   };
 
-  const restart = () => {
+  const handleNewCharacter = () => {
     if (typeof window !== "undefined") window.localStorage.removeItem("smalltalk-session");
     router.push("/");
+  };
+
+  const handleTryAgain = () => {
+    if (!session) return;
+    const fresh: Session = {
+      characterId: session.characterId,
+      characterName: session.characterName,
+      ageGroup: session.ageGroup,
+      zodiac: session.zodiac,
+      turns: [],
+      ended: false,
+    };
+    saveSession(fresh);
+    setSession(fresh);
+    setStatus("idle");
+    setAnalytics(null);
+    setAnalyticsError(null);
+    setAnalyticsLoading(false);
+    analyticsRequestedRef.current = false;
   };
 
   if (!session) {
@@ -253,6 +315,7 @@ export default function ScenePage() {
   }
 
   const character = CHARACTERS[session.characterId];
+  const showModal = status === "ended" && session.turns.length > 0;
 
   return (
     <main className="flex-1 flex flex-col px-4 py-6 max-w-2xl mx-auto w-full">
@@ -263,7 +326,7 @@ export default function ScenePage() {
           <div className="font-semibold">{session.characterName}</div>
           <div className="text-xs text-zinc-500">{character.role} · Afterparty</div>
         </div>
-        <button onClick={restart} className="ml-auto text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">
+        <button onClick={handleNewCharacter} className="ml-auto text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">
           Restart
         </button>
       </header>
@@ -300,26 +363,7 @@ export default function ScenePage() {
         </div>
       )}
 
-      {status === "ended" ? (
-        <div className="space-y-3">
-          <div className="rounded-2xl bg-zinc-100 px-4 py-3 text-sm dark:bg-zinc-900">
-            <span className="font-semibold">{session.characterName} left.</span>{" "}
-            {session.endReason}
-          </div>
-          <button
-            disabled
-            className="w-full rounded-xl bg-zinc-300 px-5 py-4 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-500"
-          >
-            Results screen (coming in hour 3)
-          </button>
-          <button
-            onClick={restart}
-            className="w-full rounded-xl border border-zinc-300 px-5 py-4 dark:border-zinc-700"
-          >
-            Try again
-          </button>
-        </div>
-      ) : (
+      {status !== "ended" && (
         <div className="flex flex-col items-center gap-2">
           <button
             onClick={status === "recording" ? stopRecording : startRecording}
@@ -339,6 +383,19 @@ export default function ScenePage() {
             {status === "idle" && "Tap to speak"}
           </div>
         </div>
+      )}
+
+      {showModal && (
+        <AnalyticsModal
+          analytics={analytics}
+          loading={analyticsLoading}
+          error={analyticsError}
+          characterName={session.characterName}
+          avatarUrl={avatarUrl(session.characterId)}
+          onClose={handleNewCharacter}
+          onTryAgain={handleTryAgain}
+          onNewCharacter={handleNewCharacter}
+        />
       )}
     </main>
   );
