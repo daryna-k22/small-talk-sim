@@ -27,19 +27,51 @@ const SILENCE_MAX_MS = 3000;
 const SILENCE_GRACE_MS = 1500;
 const VAD_POLL_MS = 100;
 
-function pickEnglishVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | null {
+const MALE_VOICE_NAMES = [
+  "Daniel",
+  "Alex",
+  "Aaron",
+  "Fred",
+  "Google UK English Male",
+  "Microsoft Guy",
+  "Microsoft Davis",
+  "Microsoft Tony",
+];
+
+const FEMALE_VOICE_NAMES = [
+  "Samantha",
+  "Karen",
+  "Victoria",
+  "Google US English",
+  "Microsoft Aria",
+  "Microsoft Jenny",
+  "Microsoft Zira",
+];
+
+const MALE_PATTERN = /\b(male|man|guy|david|john|james|daniel|alex|aaron|fred|tony|davis)\b/i;
+const FEMALE_PATTERN = /\b(female|woman|girl|aria|jenny|samantha|karen|victoria|emma|zira)\b/i;
+
+function pickEnglishVoice(voices: SpeechSynthesisVoice[], isHim: boolean): SpeechSynthesisVoice | null {
   const en = voices.filter((v) => v.lang.startsWith("en-"));
   if (en.length === 0) return null;
-  return (
-    en.find((v) => /samantha/i.test(v.name)) ??
-    en.find((v) => /google.*us english/i.test(v.name)) ??
-    en.find((v) => /microsoft.*(aria|jenny)/i.test(v.name)) ??
-    en.find((v) => v.lang === "en-US") ??
-    en[0]
+
+  const candidates = isHim ? MALE_VOICE_NAMES : FEMALE_VOICE_NAMES;
+  for (const name of candidates) {
+    const found = en.find((v) => v.name.includes(name));
+    if (found) return found;
+  }
+
+  const heuristic = en.find((v) =>
+    isHim
+      ? MALE_PATTERN.test(v.name) && !FEMALE_PATTERN.test(v.name)
+      : FEMALE_PATTERN.test(v.name),
   );
+  if (heuristic) return heuristic;
+
+  return en.find((v) => v.lang === "en-US") ?? en[0];
 }
 
-function speakReply(text: string): Promise<void> {
+function speakReply(text: string, isHim: boolean): Promise<void> {
   return new Promise((resolve) => {
     if (typeof window === "undefined" || !window.speechSynthesis) {
       resolve();
@@ -48,7 +80,7 @@ function speakReply(text: string): Promise<void> {
     const synth = window.speechSynthesis;
 
     const trySpeak = () => {
-      const voice = pickEnglishVoice(synth.getVoices());
+      const voice = pickEnglishVoice(synth.getVoices(), isHim);
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = "en-US";
       utterance.rate = 1.0;
@@ -274,7 +306,7 @@ export default function ScenePage() {
       saveSession(updated);
 
       setStatus("speaking");
-      await speakReply(data.character_reply);
+      await speakReply(data.character_reply, session.characterId === "max");
       if (ended) {
         setStatus("ended");
       } else {
