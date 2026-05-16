@@ -18,6 +18,25 @@ type HistoryTurn = { speaker: "user" | "character"; text: string };
 const VALID_AGE_GROUPS = new Set(AGE_GROUPS.map((g) => g.id));
 const VALID_ZODIACS = new Set(ZODIACS.map((z) => z.id));
 
+const UNICODE_ESCAPE = /\\u([0-9a-fA-F]{4})/g;
+
+function deepUnescape(value: unknown): unknown {
+  if (typeof value === "string") {
+    return value.replace(UNICODE_ESCAPE, (_, code) => String.fromCharCode(parseInt(code, 16)));
+  }
+  if (Array.isArray(value)) {
+    return value.map(deepUnescape);
+  }
+  if (value && typeof value === "object") {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      out[k] = deepUnescape(v);
+    }
+    return out;
+  }
+  return value;
+}
+
 export async function POST(req: Request) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -67,12 +86,19 @@ export async function POST(req: Request) {
         .join("\n")
     : "(this is the very first thing the user says)";
 
+  const userTurnsSoFar = history.filter((t) => t.speaker === "user").length;
+  const characterTurnsSoFar = history.filter((t) => t.speaker === "character").length;
+  const nextUserTurn = userTurnsSoFar + 1;
+
   const personaPrompt = character.systemPrompt({ name: finalName, ageGroup, zodiac });
 
   const taskPrompt = `${personaPrompt}
 
 Conversation so far:
 ${historyText}
+
+Exchange count: ${userTurnsSoFar} user messages and ${characterTurnsSoFar} of your replies have happened. This incoming audio is user message #${nextUserTurn}.
+Rules: should_exit MUST be false while user message # is below 6. Between 6 and 8, only exit if user is repeatedly vague/closed-off/self-centered. By user message #10, you must find a natural reason to wrap up (should_exit=true) regardless of how it's going.
 
 The user just said something — listen to the attached audio. Then produce a JSON response with:
 - transcript: faithful transcription of what the user said (English).
@@ -129,9 +155,13 @@ Stay strictly in character as ${finalName}. Never break character. Never narrate
     if (!text) {
       return Response.json({ error: "empty response from model" }, { status: 502 });
     }
-    return new Response(text, {
-      headers: { "content-type": "application/json" },
-    });
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      return Response.json({ error: "model returned invalid JSON", detail: text }, { status: 502 });
+    }
+    return Response.json(deepUnescape(parsed));
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     return Response.json({ error: "gemini call failed", detail: message }, { status: 502 });

@@ -20,6 +20,64 @@ type TurnResponse = {
   exit_reason: string;
 };
 
+const SILENCE_RMS_THRESHOLD = 0.01;
+const SILENCE_MAX_MS = 3000;
+const SILENCE_GRACE_MS = 1500;
+const VAD_POLL_MS = 100;
+
+function pickEnglishVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | null {
+  const en = voices.filter((v) => v.lang.startsWith("en-"));
+  if (en.length === 0) return null;
+  return (
+    en.find((v) => /samantha/i.test(v.name)) ??
+    en.find((v) => /google.*us english/i.test(v.name)) ??
+    en.find((v) => /microsoft.*(aria|jenny)/i.test(v.name)) ??
+    en.find((v) => v.lang === "en-US") ??
+    en[0]
+  );
+}
+
+function speakReply(text: string): Promise<void> {
+  return new Promise((resolve) => {
+    if (typeof window === "undefined" || !window.speechSynthesis) {
+      resolve();
+      return;
+    }
+    const synth = window.speechSynthesis;
+
+    const trySpeak = () => {
+      const voice = pickEnglishVoice(synth.getVoices());
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "en-US";
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      if (voice) utterance.voice = voice;
+      utterance.onend = () => resolve();
+      utterance.onerror = () => resolve();
+      synth.speak(utterance);
+    };
+
+    if (synth.getVoices().length > 0) {
+      trySpeak();
+      return;
+    }
+    let fired = false;
+    const handler = () => {
+      if (fired) return;
+      fired = true;
+      synth.removeEventListener("voiceschanged", handler);
+      trySpeak();
+    };
+    synth.addEventListener("voiceschanged", handler);
+    setTimeout(() => {
+      if (fired) return;
+      fired = true;
+      synth.removeEventListener("voiceschanged", handler);
+      trySpeak();
+    }, 1500);
+  });
+}
+
 export default function ScenePage() {
   const router = useRouter();
   const [session, setSession] = useState<Session | null>(null);
@@ -28,6 +86,8 @@ export default function ScenePage() {
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const vadIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     const s = loadSession();
@@ -40,26 +100,32 @@ export default function ScenePage() {
     if (s.ended) setStatus("ended");
   }, [router]);
 
-  const speakReply = (text: string, voicePref: "max" | "olena") =>
-    new Promise<void>((resolve) => {
-      if (typeof window === "undefined" || !window.speechSynthesis) {
-        resolve();
-        return;
-      }
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 1.0;
-      utterance.pitch = voicePref === "max" ? 0.85 : 1.15;
-      const voices = window.speechSynthesis.getVoices();
-      const preferred = voices.find((v) =>
-        voicePref === "max"
-          ? /male|daniel|alex/i.test(v.name)
-          : /female|samantha|karen|victoria/i.test(v.name),
-      );
-      if (preferred) utterance.voice = preferred;
-      utterance.onend = () => resolve();
-      utterance.onerror = () => resolve();
-      window.speechSynthesis.speak(utterance);
-    });
+  const cleanupRecording = () => {
+    if (vadIntervalRef.current) {
+      clearInterval(vadIntervalRef.current);
+      vadIntervalRef.current = null;
+    }
+    if (audioContextRef.current) {
+      audioContextRef.current.close().catch(() => undefined);
+      audioContextRef.current = null;
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+  };
+
+  const stopRecording = () => {
+    if (vadIntervalRef.current) {
+      clearInterval(vadIntervalRef.current);
+      vadIntervalRef.current = null;
+    }
+    const mr = recorderRef.current;
+    if (mr && mr.state !== "inactive") {
+      mr.stop();
+      setStatus("thinking");
+    }
+  };
 
   const startRecording = async () => {
     setError(null);
@@ -73,24 +139,49 @@ export default function ScenePage() {
       };
       mr.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: mr.mimeType || "audio/webm" });
-        stream.getTracks().forEach((t) => t.stop());
-        streamRef.current = null;
+        cleanupRecording();
         void sendTurn(blob);
       };
       recorderRef.current = mr;
+
+      const AudioCtor =
+        window.AudioContext ??
+        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (AudioCtor) {
+        const ctx = new AudioCtor();
+        audioContextRef.current = ctx;
+        const source = ctx.createMediaStreamSource(stream);
+        const analyser = ctx.createAnalyser();
+        analyser.fftSize = 2048;
+        source.connect(analyser);
+        const buf = new Float32Array(analyser.fftSize);
+        const startedAt = Date.now();
+        let silentSince: number | null = null;
+
+        vadIntervalRef.current = setInterval(() => {
+          analyser.getFloatTimeDomainData(buf);
+          let sumSq = 0;
+          for (let i = 0; i < buf.length; i++) sumSq += buf[i] * buf[i];
+          const rms = Math.sqrt(sumSq / buf.length);
+          const elapsed = Date.now() - startedAt;
+          if (elapsed < SILENCE_GRACE_MS) return;
+          if (rms < SILENCE_RMS_THRESHOLD) {
+            if (silentSince === null) silentSince = Date.now();
+            else if (Date.now() - silentSince >= SILENCE_MAX_MS) {
+              stopRecording();
+            }
+          } else {
+            silentSince = null;
+          }
+        }, VAD_POLL_MS);
+      }
+
       mr.start();
       setStatus("recording");
     } catch (e) {
+      cleanupRecording();
       setError(e instanceof Error ? e.message : "microphone access failed");
       setStatus("idle");
-    }
-  };
-
-  const stopRecording = () => {
-    const mr = recorderRef.current;
-    if (mr && mr.state !== "inactive") {
-      mr.stop();
-      setStatus("thinking");
     }
   };
 
@@ -138,10 +229,10 @@ export default function ScenePage() {
       saveSession(updated);
 
       setStatus("speaking");
-      await speakReply(data.character_reply, session.characterId);
+      await speakReply(data.character_reply);
       if (ended) {
         const exitLine = data.exit_reason || "They walked away.";
-        await speakReply(exitLine, session.characterId);
+        await speakReply(exitLine);
         setStatus("ended");
       } else {
         setStatus("idle");
@@ -242,7 +333,7 @@ export default function ScenePage() {
             {status === "recording" ? "Stop" : status === "speaking" ? "…" : "Talk"}
           </button>
           <div className="text-xs text-zinc-500 h-4">
-            {status === "recording" && "Recording…"}
+            {status === "recording" && "Recording… (auto-stops after 3s silence)"}
             {status === "thinking" && "Listening to you…"}
             {status === "speaking" && "They're replying…"}
             {status === "idle" && "Tap to speak"}
