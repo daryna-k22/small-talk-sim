@@ -117,6 +117,42 @@ export default function OnboardingPage() {
         </div>
 
         <div className="mt-7">
+          <div className="text-sm font-medium text-zinc-700 mb-2.5 dark:text-zinc-300">{t.scene}</div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <button
+              type="button"
+              className="rounded-2xl bg-purple-600 px-3 py-2.5 text-sm font-medium text-white shadow-md shadow-purple-500/30 cursor-pointer"
+            >
+              🥂 Afterparty
+            </button>
+            <button
+              type="button"
+              disabled
+              title={t.sceneComingSoon}
+              className="rounded-2xl bg-white border border-zinc-200 px-3 py-2.5 text-sm font-medium text-zinc-400 opacity-60 cursor-not-allowed dark:bg-zinc-900 dark:border-zinc-800"
+            >
+              🛗 Elevator
+            </button>
+            <button
+              type="button"
+              disabled
+              title={t.sceneComingSoon}
+              className="rounded-2xl bg-white border border-zinc-200 px-3 py-2.5 text-sm font-medium text-zinc-400 opacity-60 cursor-not-allowed dark:bg-zinc-900 dark:border-zinc-800"
+            >
+              💘 Tinder Date
+            </button>
+            <button
+              type="button"
+              disabled
+              title={t.sceneComingSoon}
+              className="rounded-2xl bg-white border border-zinc-200 px-3 py-2.5 text-sm font-medium text-zinc-400 opacity-60 cursor-not-allowed dark:bg-zinc-900 dark:border-zinc-800"
+            >
+              💼 Job Interview
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-5">
           <div className="text-sm font-medium text-zinc-700 mb-2.5 dark:text-zinc-300">{t.age}</div>
           <div className="flex flex-wrap gap-2">
             {AGE_GROUPS.map((g) => {

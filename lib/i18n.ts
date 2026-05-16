@@ -26,6 +26,8 @@ export type Dict = {
   ageYoung: string;
   ageMid: string;
   ageOlder: string;
+  scene: string;
+  sceneComingSoon: string;
   zodiac: string;
   name: string;
   namePlaceholder: string;
@@ -65,6 +67,8 @@ export const T: Record<Locale, Dict> = {
     ageYoung: "Young (20s)",
     ageMid: "Mid (30s)",
     ageOlder: "Older (40s+)",
+    scene: "Scene",
+    sceneComingSoon: "Coming soon",
     zodiac: "Zodiac",
     name: "Name",
     namePlaceholder: "Give them a name",
@@ -102,6 +106,8 @@ export const T: Record<Locale, Dict> = {
     ageYoung: "Молодий (20+)",
     ageMid: "Середній (30+)",
     ageOlder: "Старший (40+)",
+    scene: "Ситуація",
+    sceneComingSoon: "Скоро",
     zodiac: "Знак зодіаку",
     name: "Ім'я",
     namePlaceholder: "Дай ім'я",
