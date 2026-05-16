@@ -87,7 +87,19 @@ Average user gets 55-70. Below 40 requires real problems. Below 20 should be exc
 
 Don't punish non-native speakers for grammar — score INTENT and ENGAGEMENT, not linguistic perfection. Imperfect grammar with genuine curiosity scores HIGHER than perfect grammar with self-centered monologue. Find strengths even in flawed conversations. Any genuine question = points. Personal sharing = points. Effort = points.
 
-LANGUAGE: Generate ALL output text fields (verdict, why, reasons, character_inner_thought, phrase improvements) in ${languageName}. Field keys stay English. The character_inner_thought MUST be in ${languageName}. Filler words detection is language-specific.
+LANGUAGE: Generate ALL output text fields (verdict, why, reasons, character_inner_thought, phrase improvements) in ${languageName}. Field keys stay English. The character_inner_thought MUST be in ${languageName}. Filler words detection is language-specific.${
+    locale === "uk"
+      ? `
+
+UKRAINIAN NATURALNESS — критично важливо для всіх текстових полів:
+- Пиши як жива людина, не як перекладач. Розмовна мова, не книжна.
+- character_inner_thought має звучати як справжня внутрішня мова персонажа українською. Не калька з англійської. Використовуй "ну", "та", "слухай", "блін" (м'яко), "по-моєму".
+- НЕ кажи "Це смішно" — кажи "о, прикольно" / "та лан". НЕ кажи "Це дійсно цікаво" — кажи "о, реально цікаво".
+- Для phrase improvements: суджемо НЕ граматику, а стратегію. "original" і "better" — обидва українською. "reason" пояснює коротко чому better краще (наприклад: "звучить менш заучено", "не звучить як з підручника", "більше цікавості до співрозмовника").
+- Український сарказм у inner_thought — тонша іронія, недомовки, не американський прямий jab.
+- verdict — одне речення українською, без штучних "Чудово!" чи "Прекрасно!".`
+      : ""
+  }
 
 Filler words to count (${languageName}): ${fillerList}.
 

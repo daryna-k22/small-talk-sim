@@ -56,37 +56,39 @@ const FEMALE_PATTERN = /\b(female|woman|girl|aria|jenny|samantha|karen|victoria|
 const UK_MALE_VOICE_NAMES = ["Anatol", "Ostap"];
 const UK_FEMALE_VOICE_NAMES = ["Lesya", "Solomiya", "Polina"];
 
+type VoicePick = { voice: SpeechSynthesisVoice | null; genderMatched: boolean };
+
 function pickVoice(
   voices: SpeechSynthesisVoice[],
   isHim: boolean,
   locale: Locale,
-): SpeechSynthesisVoice | null {
+): VoicePick {
   if (locale === "uk") {
     const uk = voices.filter((v) => v.lang.startsWith("uk"));
     if (uk.length > 0) {
       const candidates = isHim ? UK_MALE_VOICE_NAMES : UK_FEMALE_VOICE_NAMES;
       for (const name of candidates) {
         const found = uk.find((v) => v.name.includes(name));
-        if (found) return found;
+        if (found) return { voice: found, genderMatched: true };
       }
       const heuristic = uk.find((v) =>
         isHim
           ? MALE_PATTERN.test(v.name) && !FEMALE_PATTERN.test(v.name)
           : FEMALE_PATTERN.test(v.name),
       );
-      if (heuristic) return heuristic;
-      return uk[0];
+      if (heuristic) return { voice: heuristic, genderMatched: true };
+      return { voice: uk[0], genderMatched: false };
     }
     console.warn("No Ukrainian TTS voice available, falling back to English");
   }
 
   const en = voices.filter((v) => v.lang.startsWith("en-"));
-  if (en.length === 0) return null;
+  if (en.length === 0) return { voice: null, genderMatched: false };
 
   const candidates = isHim ? MALE_VOICE_NAMES : FEMALE_VOICE_NAMES;
   for (const name of candidates) {
     const found = en.find((v) => v.name.includes(name));
-    if (found) return found;
+    if (found) return { voice: found, genderMatched: true };
   }
 
   const heuristic = en.find((v) =>
@@ -94,9 +96,9 @@ function pickVoice(
       ? MALE_PATTERN.test(v.name) && !FEMALE_PATTERN.test(v.name)
       : FEMALE_PATTERN.test(v.name),
   );
-  if (heuristic) return heuristic;
+  if (heuristic) return { voice: heuristic, genderMatched: true };
 
-  return en.find((v) => v.lang === "en-US") ?? en[0];
+  return { voice: en.find((v) => v.lang === "en-US") ?? en[0], genderMatched: false };
 }
 
 function speakReply(text: string, isHim: boolean, locale: Locale): Promise<void> {
@@ -108,11 +110,18 @@ function speakReply(text: string, isHim: boolean, locale: Locale): Promise<void>
     const synth = window.speechSynthesis;
 
     const trySpeak = () => {
-      const voice = pickVoice(synth.getVoices(), isHim, locale);
+      const { voice, genderMatched } = pickVoice(synth.getVoices(), isHim, locale);
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = locale === "uk" && voice?.lang.startsWith("uk") ? "uk-UA" : "en-US";
       utterance.rate = 1.0;
-      utterance.pitch = 1.0;
+      // When the available voice doesn't match the character's gender (most
+      // commonly UK on Mac where only Lesya is installed), shift pitch as a
+      // perceptual hack so Him and Her sound distinguishable.
+      if (!genderMatched) {
+        utterance.pitch = isHim ? 0.7 : 1.15;
+      } else {
+        utterance.pitch = 1.0;
+      }
       if (voice) utterance.voice = voice;
       utterance.onend = () => resolve();
       utterance.onerror = () => resolve();
