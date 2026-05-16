@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CHARACTERS, avatarUrl } from "@/lib/characters";
+import { AGE_GROUPS, CHARACTERS, ZODIACS, avatarUrl } from "@/lib/characters";
 import { loadSession, saveSession, type Session, type Turn } from "@/lib/session";
 import type { Analytics, TranscriptLine } from "@/lib/analytics";
 import AnalyticsModal from "@/components/AnalyticsModal";
@@ -346,7 +346,8 @@ export default function ScenePage() {
     return <main className="flex-1 flex items-center justify-center text-zinc-500">Loading…</main>;
   }
 
-  const character = CHARACTERS[session.characterId];
+  const ageLabel = AGE_GROUPS.find((g) => g.id === session.ageGroup)?.label ?? session.ageGroup;
+  const zodiacLabel = ZODIACS.find((z) => z.id === session.zodiac)?.label ?? session.zodiac;
   const showModal = status === "ended" && session.turns.length > 0;
 
   return (
@@ -356,7 +357,7 @@ export default function ScenePage() {
         <img src={avatarUrl(session.characterId)} alt={session.characterName} className="h-14 w-14 rounded-full bg-zinc-100 dark:bg-zinc-900" />
         <div>
           <div className="font-semibold">{session.characterName}</div>
-          <div className="text-xs text-zinc-500">{character.role} · Afterparty</div>
+          <div className="text-xs text-zinc-500">{ageLabel} · {zodiacLabel} · Afterparty</div>
         </div>
         <button onClick={handleNewCharacter} className="ml-auto text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">
           Restart
