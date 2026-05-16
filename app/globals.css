@@ -23,14 +23,14 @@
 body {
   color: var(--foreground);
   font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
-  background: linear-gradient(to bottom right, #fff7ed 0%, #ffffff 50%, #f5f3ff 100%);
+  background: linear-gradient(to bottom, #ede9fe 0%, #f5f3ff 50%, #ffffff 100%);
   background-attachment: fixed;
   min-height: 100vh;
 }
 
 @media (prefers-color-scheme: dark) {
   body {
-    background: linear-gradient(to bottom right, #1c1410 0%, #0a0a0a 50%, #14101c 100%);
+    background: linear-gradient(to bottom, #1e1b2e 0%, #14101c 50%, #0a0a0a 100%);
     background-attachment: fixed;
   }
 }
@@ -49,6 +49,15 @@ body {
   100% {
     box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
   }
+}
+
+@keyframes purple-glow {
+  0%, 100% { box-shadow: 0 10px 30px -10px rgba(147, 51, 234, 0.45); }
+  50% { box-shadow: 0 10px 40px -8px rgba(147, 51, 234, 0.6); }
+}
+
+.animate-purple-glow {
+  animation: purple-glow 3s ease-in-out infinite;
 }
 
 .animate-recording-ring {

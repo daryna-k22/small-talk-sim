@@ -385,14 +385,14 @@ export default function ScenePage() {
 
   return (
     <main className="flex-1 flex flex-col px-4 py-6 max-w-2xl mx-auto w-full animate-fade-in-up">
-      <header className="flex items-center gap-3 mb-6 rounded-3xl border border-black/5 bg-white/70 backdrop-blur px-4 py-3 shadow-sm dark:border-white/5 dark:bg-zinc-900/70">
+      <header className="flex items-center gap-3 mb-6 rounded-2xl bg-white px-4 py-3 shadow-md dark:bg-zinc-900">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={avatarUrl(session.characterId)} alt={session.characterName} className="h-12 w-12 rounded-full object-cover bg-zinc-100 ring-2 ring-white shadow-md dark:bg-zinc-800 dark:ring-zinc-900" />
+        <img src={avatarUrl(session.characterId)} alt={session.characterName} className="h-12 w-12 rounded-full object-cover bg-zinc-100 dark:bg-zinc-800" />
         <div className="min-w-0">
-          <div className="font-semibold tracking-tight truncate">{session.characterName}</div>
-          <div className="text-xs text-zinc-500 truncate">{ageLabel} · {zodiacLabel} · {t.afterparty}</div>
+          <div className="font-bold tracking-tight truncate text-zinc-900 dark:text-zinc-50">{session.characterName}</div>
+          <div className="text-sm text-zinc-500 truncate">{ageLabel} · {zodiacLabel} · {t.afterparty}</div>
         </div>
-        <button onClick={handleNewCharacter} className="ml-auto text-xs font-medium text-zinc-500 cursor-pointer rounded-full px-3 py-1.5 transition-all duration-300 hover:bg-black/5 hover:text-zinc-900 dark:hover:bg-white/10 dark:hover:text-zinc-100">
+        <button onClick={handleNewCharacter} className="ml-auto text-xs font-medium text-zinc-500 cursor-pointer rounded-full px-3 py-1.5 transition-all duration-200 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100">
           {t.restart}
         </button>
       </header>
@@ -406,10 +406,10 @@ export default function ScenePage() {
         {session.turns.map((turn, i) => (
           <div key={i} className={`flex animate-fade-in-up ${turn.speaker === "user" ? "justify-end" : "justify-start"}`}>
             <div
-              className={`max-w-[80%] rounded-3xl px-4 py-2.5 text-sm leading-relaxed ${
+              className={`max-w-[75%] rounded-3xl px-5 py-3 text-sm leading-relaxed ${
                 turn.speaker === "user"
-                  ? "bg-gradient-to-br from-zinc-900 to-zinc-800 text-white shadow-md shadow-black/10 dark:from-white dark:to-zinc-100 dark:text-zinc-900"
-                  : "bg-white text-zinc-900 shadow-md shadow-black/5 border border-black/5 dark:bg-zinc-900 dark:text-zinc-100 dark:border-white/5"
+                  ? "bg-purple-600 text-white shadow-md shadow-purple-500/20"
+                  : "bg-white text-zinc-900 shadow-sm dark:bg-zinc-900 dark:text-zinc-100"
               }`}
             >
               {turn.text}
@@ -418,11 +418,11 @@ export default function ScenePage() {
         ))}
         {status === "thinking" && (
           <div className="flex justify-start animate-fade-in-up">
-            <div className="rounded-3xl bg-white px-4 py-2.5 text-sm text-zinc-400 shadow-md shadow-black/5 border border-black/5 dark:bg-zinc-900 dark:border-white/5">
+            <div className="rounded-3xl bg-white px-5 py-3 text-sm text-zinc-400 shadow-sm dark:bg-zinc-900">
               <span className="inline-flex items-center gap-1">
-                <span className="h-1.5 w-1.5 rounded-full bg-zinc-400 animate-bounce" style={{ animationDelay: "0ms" }} />
-                <span className="h-1.5 w-1.5 rounded-full bg-zinc-400 animate-bounce" style={{ animationDelay: "150ms" }} />
-                <span className="h-1.5 w-1.5 rounded-full bg-zinc-400 animate-bounce" style={{ animationDelay: "300ms" }} />
+                <span className="h-1.5 w-1.5 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: "0ms" }} />
+                <span className="h-1.5 w-1.5 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: "150ms" }} />
+                <span className="h-1.5 w-1.5 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: "300ms" }} />
               </span>
             </div>
           </div>
@@ -441,15 +441,25 @@ export default function ScenePage() {
             onClick={status === "recording" ? stopRecording : startRecording}
             disabled={status === "thinking" || status === "speaking"}
             aria-label={status === "recording" ? t.stop : t.talk}
-            className={`relative h-24 w-24 rounded-full text-white text-sm font-semibold tracking-tight cursor-pointer transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
+            className={`relative flex items-center justify-center h-20 w-20 rounded-full text-white cursor-pointer transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
               status === "recording"
-                ? "bg-gradient-to-br from-red-500 to-rose-600 shadow-xl shadow-red-500/40 animate-recording-ring"
+                ? "bg-red-500 shadow-xl shadow-red-500/40 before:content-[''] before:absolute before:inset-0 before:rounded-full before:bg-red-500 before:animate-ping before:opacity-30"
                 : status === "idle"
-                ? "bg-gradient-to-br from-orange-500 to-pink-500 shadow-xl shadow-orange-500/30 hover:scale-105 active:scale-95 animate-idle-bob"
-                : "bg-gradient-to-br from-zinc-400 to-zinc-500 shadow-lg"
+                ? "bg-purple-600 shadow-xl shadow-purple-500/40 hover:bg-purple-700 hover:scale-105 active:scale-95"
+                : "bg-zinc-400 shadow-lg"
             }`}
           >
-            {status === "recording" ? t.stop : status === "speaking" ? "…" : t.talk}
+            {status === "recording" ? (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <rect x="6" y="6" width="12" height="12" rx="2" />
+              </svg>
+            ) : (
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                <line x1="12" x2="12" y1="19" y2="22" />
+              </svg>
+            )}
           </button>
           <div className="text-xs text-zinc-500 h-4 font-medium">
             {status === "recording" && t.recordingHint}

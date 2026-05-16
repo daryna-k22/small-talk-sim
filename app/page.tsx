@@ -59,40 +59,37 @@ export default function OnboardingPage() {
   };
 
   return (
-    <main className="flex flex-1 flex-col items-center justify-center px-6 py-8">
-      <div className="w-full max-w-2xl animate-fade-in-up">
-        <div className="mb-6 flex justify-center gap-1">
-          {LOCALES.map((l) => {
-            const active = locale === l.id;
-            return (
-              <button
-                key={l.id}
-                type="button"
-                onClick={() => changeLocale(l.id)}
-                className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs cursor-pointer transition-all duration-300 ${
-                  active
-                    ? "bg-black text-white shadow-md dark:bg-white dark:text-black"
-                    : "bg-white/60 text-zinc-600 hover:bg-white hover:shadow-sm border border-black/5 dark:bg-white/10 dark:text-zinc-300 dark:hover:bg-white/20"
-                }`}
-              >
-                <span>{l.flag}</span>
-                <span>{l.label}</span>
-              </button>
-            );
-          })}
-        </div>
+    <main className="relative flex flex-1 flex-col items-center justify-center px-6 py-8">
+      <div className="absolute right-4 top-4 flex gap-1 rounded-full bg-white/80 backdrop-blur px-1 py-1 shadow-sm ring-1 ring-black/5">
+        {LOCALES.map((l) => {
+          const active = locale === l.id;
+          return (
+            <button
+              key={l.id}
+              type="button"
+              onClick={() => changeLocale(l.id)}
+              className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-xs cursor-pointer transition-all duration-200 ${
+                active
+                  ? "bg-purple-600 text-white"
+                  : "text-zinc-600 hover:bg-zinc-100"
+              }`}
+            >
+              <span>{l.flag}</span>
+              <span className="font-medium">{l.label}</span>
+            </button>
+          );
+        })}
+      </div>
 
+      <div className="w-full max-w-2xl animate-fade-in-up">
         <header className="mb-8 text-center">
-          <div className="text-[10px] font-medium tracking-[0.2em] text-zinc-500 uppercase mb-3">
-            Voice-first · AI-powered
-          </div>
-          <h1 className="font-display text-5xl md:text-6xl leading-[1.05] tracking-tight text-zinc-900 dark:text-zinc-50">
+          <h1 className="text-5xl md:text-6xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
             Small Talk Simulator
           </h1>
-          <p className="mt-4 text-base text-zinc-500 max-w-md mx-auto leading-relaxed">{t.subtitle}</p>
+          <p className="mt-3 text-base text-zinc-600 max-w-md mx-auto dark:text-zinc-400">{t.subtitle}</p>
         </header>
 
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2">
           {Object.values(CHARACTERS).map((c) => {
             const selected = picked === c.id;
             const label = c.id === "max" ? t.him : t.her;
@@ -101,27 +98,27 @@ export default function OnboardingPage() {
                 key={c.id}
                 type="button"
                 onClick={() => setPicked(c.id)}
-                className={`group flex flex-col items-center text-center rounded-3xl border bg-white p-5 cursor-pointer transition-all duration-300 dark:bg-zinc-900 ${
+                className={`group flex flex-col items-center text-center rounded-3xl border bg-white p-6 cursor-pointer transition-all duration-300 ${
                   selected
-                    ? "border-orange-300 ring-2 ring-orange-400 ring-offset-2 ring-offset-transparent shadow-xl shadow-orange-500/10 scale-[1.02]"
-                    : "border-black/5 shadow-lg shadow-black/5 hover:shadow-xl hover:shadow-black/10 hover:scale-[1.02] hover:border-black/10 dark:border-white/5 dark:hover:border-white/10"
+                    ? "border-purple-300 ring-2 ring-purple-500 ring-offset-2 ring-offset-transparent shadow-xl shadow-purple-300/40 scale-[1.03]"
+                    : "border-purple-100 shadow-xl shadow-purple-200/40 hover:scale-[1.02] hover:shadow-2xl hover:shadow-purple-300/50 dark:border-purple-900/30"
                 }`}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={avatarUrl(c.id)}
                   alt={label}
-                  className="mb-3 h-20 w-20 rounded-full object-cover bg-zinc-100 transition-transform duration-300 group-hover:scale-105 dark:bg-zinc-800"
+                  className="mb-3 h-[140px] w-[140px] rounded-full object-cover bg-zinc-100 dark:bg-zinc-800"
                 />
-                <div className="text-lg font-semibold tracking-tight">{label}</div>
+                <div className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">{label}</div>
               </button>
             );
           })}
         </div>
 
-        <div className="mt-6">
-          <div className="text-[11px] font-semibold tracking-wider text-zinc-500 uppercase mb-2.5">{t.age}</div>
-          <div className="grid grid-cols-3 gap-2">
+        <div className="mt-7">
+          <div className="text-sm font-medium text-zinc-700 mb-2.5 dark:text-zinc-300">{t.age}</div>
+          <div className="flex flex-wrap gap-2">
             {AGE_GROUPS.map((g) => {
               const selected = ageGroup === g.id;
               return (
@@ -129,10 +126,10 @@ export default function OnboardingPage() {
                   key={g.id}
                   type="button"
                   onClick={() => setAgeGroup(g.id)}
-                  className={`rounded-2xl border px-3 py-2.5 text-sm font-medium cursor-pointer transition-all duration-300 ${
+                  className={`rounded-full px-4 py-2 text-sm font-medium cursor-pointer transition-all duration-200 ${
                     selected
-                      ? "border-orange-300 bg-orange-50 text-orange-900 shadow-sm dark:border-orange-500/40 dark:bg-orange-500/10 dark:text-orange-200"
-                      : "border-black/5 bg-white text-zinc-700 hover:border-black/10 hover:shadow-sm dark:border-white/5 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-white/10"
+                      ? "bg-purple-600 text-white shadow-md shadow-purple-500/30"
+                      : "bg-white border border-zinc-200 text-zinc-700 hover:border-zinc-300 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-300"
                   }`}
                 >
                   {ageLabelFor(t, g.id)}
@@ -142,28 +139,28 @@ export default function OnboardingPage() {
           </div>
         </div>
 
-        <div className="mt-4">
-          <div className="text-[11px] font-semibold tracking-wider text-zinc-500 uppercase mb-2.5">{t.zodiac}</div>
+        <div className="mt-5">
+          <div className="text-sm font-medium text-zinc-700 mb-2.5 dark:text-zinc-300">{t.zodiac}</div>
           <select
             value={zodiac}
             onChange={(e) => setZodiac(e.target.value as Zodiac)}
-            className="w-full rounded-2xl border border-black/5 bg-white px-4 py-3 text-sm cursor-pointer outline-none transition-all duration-300 focus:border-orange-300 focus:ring-2 focus:ring-orange-200 dark:border-white/5 dark:bg-zinc-900 dark:focus:ring-orange-500/30"
+            className="w-full rounded-xl border border-zinc-200 bg-white p-3 text-sm cursor-pointer outline-none transition-all duration-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 dark:border-zinc-800 dark:bg-zinc-900 dark:focus:ring-purple-900/50"
           >
             {ZODIACS.map((z) => (
-              <option key={z.id} value={z.id} className="bg-white dark:bg-zinc-900">
+              <option key={z.id} value={z.id}>
                 {z.label}
               </option>
             ))}
           </select>
         </div>
 
-        <div className="mt-4">
-          <div className="text-[11px] font-semibold tracking-wider text-zinc-500 uppercase mb-2.5">{t.name}</div>
+        <div className="mt-5">
+          <div className="text-sm font-medium text-zinc-700 mb-2.5 dark:text-zinc-300">{t.name}</div>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder={t.namePlaceholder}
-            className="w-full rounded-2xl border border-black/5 bg-white px-4 py-3 text-base outline-none transition-all duration-300 placeholder:text-zinc-400 focus:border-orange-300 focus:ring-2 focus:ring-orange-200 dark:border-white/5 dark:bg-zinc-900 dark:focus:ring-orange-500/30"
+            className="w-full rounded-xl border border-zinc-200 bg-white p-3 text-base outline-none transition-all duration-200 placeholder:text-zinc-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 dark:border-zinc-800 dark:bg-zinc-900 dark:focus:ring-purple-900/50"
           />
         </div>
 
@@ -171,10 +168,10 @@ export default function OnboardingPage() {
           type="button"
           onClick={start}
           disabled={!canStart}
-          className={`mt-7 w-full rounded-full px-5 py-4 text-base font-semibold tracking-tight transition-all duration-300 ${
+          className={`mt-7 w-full rounded-2xl py-4 px-6 text-lg font-semibold transition-all duration-300 ${
             canStart
-              ? "bg-gradient-to-r from-orange-500 to-pink-500 text-white shadow-xl shadow-orange-500/30 cursor-pointer hover:scale-[1.02] hover:shadow-2xl hover:shadow-orange-500/40 active:scale-[0.98]"
-              : "bg-gradient-to-r from-zinc-200 to-zinc-300 text-zinc-500 cursor-not-allowed dark:from-zinc-800 dark:to-zinc-700 dark:text-zinc-500"
+              ? "bg-purple-600 text-white shadow-lg shadow-purple-500/30 cursor-pointer hover:bg-purple-700 hover:scale-[1.01] active:scale-[0.99]"
+              : "bg-zinc-300 text-zinc-500 cursor-not-allowed dark:bg-zinc-800 dark:text-zinc-500"
           }`}
         >
           {t.walkUp}
