@@ -10,6 +10,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-serif: var(--font-serif);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -20,7 +21,69 @@
 }
 
 body {
-  background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  background: linear-gradient(to bottom right, #fff7ed 0%, #ffffff 50%, #f5f3ff 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background: linear-gradient(to bottom right, #1c1410 0%, #0a0a0a 50%, #14101c 100%);
+    background-attachment: fixed;
+  }
+}
+
+.font-display {
+  font-family: var(--font-serif), Georgia, serif;
+}
+
+@keyframes recording-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.55);
+  }
+  70% {
+    box-shadow: 0 0 0 24px rgba(239, 68, 68, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+.animate-recording-ring {
+  animation: recording-ring 1.6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes idle-bob {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+
+.animate-idle-bob {
+  animation: idle-bob 3s ease-in-out infinite;
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.5s ease-out both;
+}
+
+@keyframes soft-pulse-glow {
+  0%, 100% { box-shadow: 0 0 40px rgba(251, 146, 60, 0.25); }
+  50% { box-shadow: 0 0 60px rgba(251, 146, 60, 0.4); }
+}
+
+.animate-soft-glow {
+  animation: soft-pulse-glow 3s ease-in-out infinite;
 }

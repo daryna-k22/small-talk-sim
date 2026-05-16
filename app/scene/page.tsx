@@ -384,65 +384,74 @@ export default function ScenePage() {
   const showModal = status === "ended" && session.turns.length > 0;
 
   return (
-    <main className="flex-1 flex flex-col px-4 py-6 max-w-2xl mx-auto w-full">
-      <header className="flex items-center gap-3 mb-6">
+    <main className="flex-1 flex flex-col px-4 py-6 max-w-2xl mx-auto w-full animate-fade-in-up">
+      <header className="flex items-center gap-3 mb-6 rounded-3xl border border-black/5 bg-white/70 backdrop-blur px-4 py-3 shadow-sm dark:border-white/5 dark:bg-zinc-900/70">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={avatarUrl(session.characterId)} alt={session.characterName} className="h-14 w-14 rounded-full bg-zinc-100 dark:bg-zinc-900" />
-        <div>
-          <div className="font-semibold">{session.characterName}</div>
-          <div className="text-xs text-zinc-500">{ageLabel} · {zodiacLabel} · {t.afterparty}</div>
+        <img src={avatarUrl(session.characterId)} alt={session.characterName} className="h-12 w-12 rounded-full bg-zinc-100 ring-2 ring-white shadow-md dark:bg-zinc-800 dark:ring-zinc-900" />
+        <div className="min-w-0">
+          <div className="font-semibold tracking-tight truncate">{session.characterName}</div>
+          <div className="text-xs text-zinc-500 truncate">{ageLabel} · {zodiacLabel} · {t.afterparty}</div>
         </div>
-        <button onClick={handleNewCharacter} className="ml-auto text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">
+        <button onClick={handleNewCharacter} className="ml-auto text-xs font-medium text-zinc-500 cursor-pointer rounded-full px-3 py-1.5 transition-all duration-300 hover:bg-black/5 hover:text-zinc-900 dark:hover:bg-white/10 dark:hover:text-zinc-100">
           {t.restart}
         </button>
       </header>
 
-      <div className="flex-1 overflow-y-auto space-y-3 mb-6">
+      <div className="flex-1 overflow-y-auto space-y-4 mb-6 pr-1">
         {session.turns.length === 0 && (
-          <div className="text-center text-sm text-zinc-500 py-12">
+          <div className="text-center text-sm text-zinc-500 py-12 max-w-xs mx-auto leading-relaxed">
             {t.emptyState}
           </div>
         )}
-        {session.turns.map((t, i) => (
-          <div key={i} className={`flex ${t.speaker === "user" ? "justify-end" : "justify-start"}`}>
+        {session.turns.map((turn, i) => (
+          <div key={i} className={`flex animate-fade-in-up ${turn.speaker === "user" ? "justify-end" : "justify-start"}`}>
             <div
-              className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm ${
-                t.speaker === "user"
-                  ? "bg-black text-white dark:bg-white dark:text-black"
-                  : "bg-zinc-100 text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100"
+              className={`max-w-[80%] rounded-3xl px-4 py-2.5 text-sm leading-relaxed ${
+                turn.speaker === "user"
+                  ? "bg-gradient-to-br from-zinc-900 to-zinc-800 text-white shadow-md shadow-black/10 dark:from-white dark:to-zinc-100 dark:text-zinc-900"
+                  : "bg-white text-zinc-900 shadow-md shadow-black/5 border border-black/5 dark:bg-zinc-900 dark:text-zinc-100 dark:border-white/5"
               }`}
             >
-              {t.text}
+              {turn.text}
             </div>
           </div>
         ))}
         {status === "thinking" && (
-          <div className="flex justify-start">
-            <div className="rounded-2xl bg-zinc-100 px-4 py-2 text-sm text-zinc-400 dark:bg-zinc-900">…</div>
+          <div className="flex justify-start animate-fade-in-up">
+            <div className="rounded-3xl bg-white px-4 py-2.5 text-sm text-zinc-400 shadow-md shadow-black/5 border border-black/5 dark:bg-zinc-900 dark:border-white/5">
+              <span className="inline-flex items-center gap-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-zinc-400 animate-bounce" style={{ animationDelay: "0ms" }} />
+                <span className="h-1.5 w-1.5 rounded-full bg-zinc-400 animate-bounce" style={{ animationDelay: "150ms" }} />
+                <span className="h-1.5 w-1.5 rounded-full bg-zinc-400 animate-bounce" style={{ animationDelay: "300ms" }} />
+              </span>
+            </div>
           </div>
         )}
       </div>
 
       {error && (
-        <div className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-200">
+        <div className="mb-3 rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
           {error}
         </div>
       )}
 
       {status !== "ended" && (
-        <div className="flex flex-col items-center gap-2">
+        <div className="flex flex-col items-center gap-3 pb-2">
           <button
             onClick={status === "recording" ? stopRecording : startRecording}
             disabled={status === "thinking" || status === "speaking"}
-            className={`h-20 w-20 rounded-full text-white text-sm font-medium transition disabled:opacity-50 ${
+            aria-label={status === "recording" ? t.stop : t.talk}
+            className={`relative h-24 w-24 rounded-full text-white text-sm font-semibold tracking-tight cursor-pointer transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
               status === "recording"
-                ? "bg-red-500 animate-pulse"
-                : "bg-black dark:bg-white dark:text-black"
+                ? "bg-gradient-to-br from-red-500 to-rose-600 shadow-xl shadow-red-500/40 animate-recording-ring"
+                : status === "idle"
+                ? "bg-gradient-to-br from-orange-500 to-pink-500 shadow-xl shadow-orange-500/30 hover:scale-105 active:scale-95 animate-idle-bob"
+                : "bg-gradient-to-br from-zinc-400 to-zinc-500 shadow-lg"
             }`}
           >
             {status === "recording" ? t.stop : status === "speaking" ? "…" : t.talk}
           </button>
-          <div className="text-xs text-zinc-500 h-4">
+          <div className="text-xs text-zinc-500 h-4 font-medium">
             {status === "recording" && t.recordingHint}
             {status === "thinking" && t.thinkingHint}
             {status === "speaking" && t.speakingHint}

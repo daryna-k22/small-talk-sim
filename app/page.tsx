@@ -60,8 +60,8 @@ export default function OnboardingPage() {
 
   return (
     <main className="flex flex-1 flex-col items-center justify-center px-6 py-8">
-      <div className="w-full max-w-2xl">
-        <div className="mb-4 flex justify-center gap-1">
+      <div className="w-full max-w-2xl animate-fade-in-up">
+        <div className="mb-6 flex justify-center gap-1">
           {LOCALES.map((l) => {
             const active = locale === l.id;
             return (
@@ -69,10 +69,10 @@ export default function OnboardingPage() {
                 key={l.id}
                 type="button"
                 onClick={() => changeLocale(l.id)}
-                className={`flex items-center gap-1 rounded-full px-3 py-1 text-xs transition ${
+                className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs cursor-pointer transition-all duration-300 ${
                   active
-                    ? "bg-black text-white dark:bg-white dark:text-black"
-                    : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800"
+                    ? "bg-black text-white shadow-md dark:bg-white dark:text-black"
+                    : "bg-white/60 text-zinc-600 hover:bg-white hover:shadow-sm border border-black/5 dark:bg-white/10 dark:text-zinc-300 dark:hover:bg-white/20"
                 }`}
               >
                 <span>{l.flag}</span>
@@ -82,9 +82,14 @@ export default function OnboardingPage() {
           })}
         </div>
 
-        <header className="mb-6 text-center">
-          <h1 className="text-3xl font-semibold tracking-tight">Small Talk Simulator</h1>
-          <p className="mt-2 text-sm text-zinc-500">{t.subtitle}</p>
+        <header className="mb-8 text-center">
+          <div className="text-[10px] font-medium tracking-[0.2em] text-zinc-500 uppercase mb-3">
+            Voice-first · AI-powered
+          </div>
+          <h1 className="font-display text-5xl md:text-6xl leading-[1.05] tracking-tight text-zinc-900 dark:text-zinc-50">
+            Small Talk Simulator
+          </h1>
+          <p className="mt-4 text-base text-zinc-500 max-w-md mx-auto leading-relaxed">{t.subtitle}</p>
         </header>
 
         <div className="grid gap-3 sm:grid-cols-2">
@@ -96,26 +101,26 @@ export default function OnboardingPage() {
                 key={c.id}
                 type="button"
                 onClick={() => setPicked(c.id)}
-                className={`flex flex-col items-center text-center rounded-2xl border p-4 transition ${
+                className={`group flex flex-col items-center text-center rounded-3xl border bg-white p-5 cursor-pointer transition-all duration-300 dark:bg-zinc-900 ${
                   selected
-                    ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
-                    : "border-zinc-200 hover:border-zinc-400 dark:border-zinc-800 dark:hover:border-zinc-600"
+                    ? "border-orange-300 ring-2 ring-orange-400 ring-offset-2 ring-offset-transparent shadow-xl shadow-orange-500/10 scale-[1.02]"
+                    : "border-black/5 shadow-lg shadow-black/5 hover:shadow-xl hover:shadow-black/10 hover:scale-[1.02] hover:border-black/10 dark:border-white/5 dark:hover:border-white/10"
                 }`}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={avatarUrl(c.id)}
                   alt={label}
-                  className="mb-2 h-16 w-16 rounded-full bg-zinc-100 dark:bg-zinc-900"
+                  className="mb-3 h-20 w-20 rounded-full bg-zinc-100 transition-transform duration-300 group-hover:scale-105 dark:bg-zinc-800"
                 />
-                <div className="text-base font-semibold">{label}</div>
+                <div className="text-lg font-semibold tracking-tight">{label}</div>
               </button>
             );
           })}
         </div>
 
-        <div className="mt-5">
-          <div className="text-xs font-medium text-zinc-500 mb-2">{t.age}</div>
+        <div className="mt-6">
+          <div className="text-[11px] font-semibold tracking-wider text-zinc-500 uppercase mb-2.5">{t.age}</div>
           <div className="grid grid-cols-3 gap-2">
             {AGE_GROUPS.map((g) => {
               const selected = ageGroup === g.id;
@@ -124,10 +129,10 @@ export default function OnboardingPage() {
                   key={g.id}
                   type="button"
                   onClick={() => setAgeGroup(g.id)}
-                  className={`rounded-xl border px-3 py-2 text-sm transition ${
+                  className={`rounded-2xl border px-3 py-2.5 text-sm font-medium cursor-pointer transition-all duration-300 ${
                     selected
-                      ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
-                      : "border-zinc-200 hover:border-zinc-400 dark:border-zinc-800 dark:hover:border-zinc-600"
+                      ? "border-orange-300 bg-orange-50 text-orange-900 shadow-sm dark:border-orange-500/40 dark:bg-orange-500/10 dark:text-orange-200"
+                      : "border-black/5 bg-white text-zinc-700 hover:border-black/10 hover:shadow-sm dark:border-white/5 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-white/10"
                   }`}
                 >
                   {ageLabelFor(t, g.id)}
@@ -138,14 +143,14 @@ export default function OnboardingPage() {
         </div>
 
         <div className="mt-4">
-          <div className="text-xs font-medium text-zinc-500 mb-2">{t.zodiac}</div>
+          <div className="text-[11px] font-semibold tracking-wider text-zinc-500 uppercase mb-2.5">{t.zodiac}</div>
           <select
             value={zodiac}
             onChange={(e) => setZodiac(e.target.value as Zodiac)}
-            className="w-full rounded-xl border border-zinc-300 bg-transparent px-3 py-2 text-sm outline-none focus:border-black dark:border-zinc-700 dark:focus:border-white"
+            className="w-full rounded-2xl border border-black/5 bg-white px-4 py-3 text-sm cursor-pointer outline-none transition-all duration-300 focus:border-orange-300 focus:ring-2 focus:ring-orange-200 dark:border-white/5 dark:bg-zinc-900 dark:focus:ring-orange-500/30"
           >
             {ZODIACS.map((z) => (
-              <option key={z.id} value={z.id} className="bg-white dark:bg-black">
+              <option key={z.id} value={z.id} className="bg-white dark:bg-zinc-900">
                 {z.label}
               </option>
             ))}
@@ -153,12 +158,12 @@ export default function OnboardingPage() {
         </div>
 
         <div className="mt-4">
-          <label className="block text-xs font-medium text-zinc-500 mb-2">{t.name}</label>
+          <div className="text-[11px] font-semibold tracking-wider text-zinc-500 uppercase mb-2.5">{t.name}</div>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder={t.namePlaceholder}
-            className="w-full rounded-xl border border-zinc-300 bg-transparent px-4 py-2 text-base outline-none focus:border-black dark:border-zinc-700 dark:focus:border-white"
+            className="w-full rounded-2xl border border-black/5 bg-white px-4 py-3 text-base outline-none transition-all duration-300 placeholder:text-zinc-400 focus:border-orange-300 focus:ring-2 focus:ring-orange-200 dark:border-white/5 dark:bg-zinc-900 dark:focus:ring-orange-500/30"
           />
         </div>
 
@@ -166,7 +171,11 @@ export default function OnboardingPage() {
           type="button"
           onClick={start}
           disabled={!canStart}
-          className="mt-6 w-full rounded-xl bg-black px-5 py-3 text-white font-medium transition disabled:opacity-40 dark:bg-white dark:text-black"
+          className={`mt-7 w-full rounded-full px-5 py-4 text-base font-semibold tracking-tight transition-all duration-300 ${
+            canStart
+              ? "bg-gradient-to-r from-orange-500 to-pink-500 text-white shadow-xl shadow-orange-500/30 cursor-pointer hover:scale-[1.02] hover:shadow-2xl hover:shadow-orange-500/40 active:scale-[0.98]"
+              : "bg-gradient-to-r from-zinc-200 to-zinc-300 text-zinc-500 cursor-not-allowed dark:from-zinc-800 dark:to-zinc-700 dark:text-zinc-500"
+          }`}
         >
           {t.walkUp}
         </button>
