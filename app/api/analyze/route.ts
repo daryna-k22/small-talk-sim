@@ -1,6 +1,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import type { TranscriptLine } from "@/lib/analytics";
 import type { Locale } from "@/lib/i18n";
+import { SCENES, type SceneId } from "@/lib/scenes";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -25,9 +26,11 @@ type Body = {
   transcript: TranscriptLine[];
   characterName: string;
   characterPersona: string;
-  scene: string;
+  scene?: SceneId | string;
   locale?: Locale;
 };
+
+const VALID_SCENES = new Set(Object.keys(SCENES) as SceneId[]);
 
 export async function POST(req: Request) {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -47,7 +50,11 @@ export async function POST(req: Request) {
   }
   const characterName = (body.characterName || "Them").trim();
   const characterPersona = (body.characterPersona || "Stranger").trim();
-  const scene = (body.scene || "a tech afterparty").trim();
+  const sceneId: SceneId = VALID_SCENES.has(body.scene as SceneId)
+    ? (body.scene as SceneId)
+    : "afterparty";
+  const sceneDef = SCENES[sceneId];
+  const sceneLabel = sceneDef.labels.en;
   const locale: Locale = body.locale === "uk" ? "uk" : "en";
   const languageName = locale === "uk" ? "Ukrainian" : "English";
   const fillerList =
@@ -59,7 +66,10 @@ export async function POST(req: Request) {
     .map((t) => (t.role === "user" ? `User: ${t.content}` : `${characterName}: ${t.content}`))
     .join("\n");
 
-  const prompt = `Analyze this small talk conversation. USER was practicing social skills with ${characterName} (${characterPersona}) at ${scene}.
+  const prompt = `Analyze this small talk conversation. USER was practicing social skills with ${characterName} (${characterPersona}) in the "${sceneLabel}" scenario.
+
+SCENE-SPECIFIC SCORING GUIDANCE (apply this on top of the rubric):
+${sceneDef.scoringGuidance}
 
 Transcript:
 ${transcriptText}

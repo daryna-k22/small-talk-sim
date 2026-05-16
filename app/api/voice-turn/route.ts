@@ -8,6 +8,7 @@ import {
   type Zodiac,
 } from "@/lib/characters";
 import type { Locale } from "@/lib/i18n";
+import { SCENES, type SceneId } from "@/lib/scenes";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -18,6 +19,7 @@ type HistoryTurn = { speaker: "user" | "character"; text: string };
 
 const VALID_AGE_GROUPS = new Set(AGE_GROUPS.map((g) => g.id));
 const VALID_ZODIACS = new Set(ZODIACS.map((z) => z.id));
+const VALID_SCENES = new Set(Object.keys(SCENES) as SceneId[]);
 
 const UNICODE_ESCAPE = /\\u([0-9a-fA-F]{4})/g;
 
@@ -33,17 +35,6 @@ const USER_GOODBYE_RE_UK =
 const CHAR_GOODBYE_RE_UK =
   /(піду|побіг|треба\s+(йти|бігти)|маю\s+йти|приємно\s+(було|поговорили)|перепрошую|вибач|зараз\s+підійду)/i;
 
-const CANNED_GOODBYES_EN = [
-  "Take care! Lovely meeting you.",
-  "Same here — have a good one!",
-  "Cheers, catch you around!",
-];
-
-const CANNED_GOODBYES_UK = [
-  "Бувай! Було приємно поспілкуватись.",
-  "Тримай п'ять — гарного вечора!",
-  "До зустрічі, ще побачимось!",
-];
 
 function deepUnescape(value: unknown): unknown {
   if (typeof value === "string") {
@@ -76,6 +67,10 @@ export async function POST(req: Request) {
   const zodiacRaw = form.get("zodiac") as string | null;
   const localeRaw = (form.get("locale") as string | null) ?? "en";
   const locale: Locale = localeRaw === "uk" ? "uk" : "en";
+  const sceneRaw = (form.get("scene") as string | null) ?? "afterparty";
+  const scene: SceneId = VALID_SCENES.has(sceneRaw as SceneId)
+    ? (sceneRaw as SceneId)
+    : "afterparty";
   const historyJson = (form.get("history") as string | null) ?? "[]";
 
   if (!(audio instanceof Blob) || audio.size === 0) {
@@ -118,6 +113,10 @@ export async function POST(req: Request) {
   const nextUserTurn = userTurnsSoFar + 1;
 
   const personaPrompt = character.systemPrompt({ name: finalName, ageGroup, zodiac });
+  const sceneDef = SCENES[scene];
+  const sceneModifier = sceneDef.modifier(finalName);
+  const minExchanges = sceneDef.minExchanges;
+  const maxExchanges = sceneDef.maxExchanges;
 
   const languageName = locale === "uk" ? "Ukrainian" : "English";
   const fillerExamples =
@@ -127,20 +126,22 @@ export async function POST(req: Request) {
 
   const taskPrompt = `${personaPrompt}
 
+${sceneModifier}
+
 LANGUAGE: The user is speaking in ${languageName}. Transcribe the audio in ${languageName}. Your character_reply MUST also be in ${languageName}. The exit_reason MUST be in ${languageName}. Stay in character regardless of language.
 
 Conversation so far:
 ${historyText}
 
 Exchange count: ${userTurnsSoFar} user messages and ${characterTurnsSoFar} of your replies have happened. This incoming audio is user message #${nextUserTurn}.
-Rules: should_exit MUST be false while user message # is below 6. Between 6 and 8, only exit if user is repeatedly vague/closed-off/self-centered. By user message #10, you must find a natural reason to wrap up (should_exit=true) regardless of how it's going.
+Exit rules for THIS scene: should_exit MUST be false while user message # is below ${minExchanges}. Between ${minExchanges} and ${maxExchanges - 1}, only exit if the user is repeatedly vague/closed-off/self-centered (or per scene-specific red flags). By user message #${maxExchanges}, you MUST find a natural reason to wrap up (should_exit=true) regardless of how it's going.
 
 The user just said something — listen to the attached audio. Then produce a JSON response with:
 - transcript: faithful transcription of what the user said, in ${languageName}.
 - voice_analysis: confidence ("low"|"medium"|"high"), energy ("low"|"medium"|"high"), filler_words (array of literal fillers heard like ${fillerExamples}), notable_tone (one short sentence in English — e.g. "rehearsed", "warm", "anxious", "flat").
-- character_reply: your in-character reply in ${languageName}, max 2 sentences, plain speech only.
-- should_exit: true ONLY if the last two user turns (including this one) have been low-energy/vague/closed-off; otherwise false.
-- exit_reason: if should_exit is true, a one-sentence in-character explanation in ${languageName}. Otherwise empty string.
+- character_reply: your in-character reply in ${languageName}, kept to the length appropriate for this scene, plain speech only.
+- should_exit: follow the scene's exit rules above and the scene-specific behavior already described.
+- exit_reason: if should_exit is true, a one-sentence in-character explanation in ${languageName} that matches THIS scene (e.g. floor arrived for elevator, transition to main interview for interview, etc.). Otherwise empty string.
 
 Stay strictly in character as ${finalName}. Never break character. Never narrate actions.`;
 
@@ -209,7 +210,7 @@ Stay strictly in character as ${finalName}. Never break character. Never narrate
 
     const userGoodbyeRe = locale === "uk" ? USER_GOODBYE_RE_UK : USER_GOODBYE_RE_EN;
     const charGoodbyeRe = locale === "uk" ? CHAR_GOODBYE_RE_UK : CHAR_GOODBYE_RE_EN;
-    const cannedGoodbyes = locale === "uk" ? CANNED_GOODBYES_UK : CANNED_GOODBYES_EN;
+    const cannedGoodbyes = sceneDef.cannedGoodbyes[locale];
     const fallbackExit = locale === "uk" ? "Ви попрощались." : "You said your goodbyes.";
 
     if (transcript && userGoodbyeRe.test(transcript)) {

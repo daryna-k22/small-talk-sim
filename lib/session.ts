@@ -1,5 +1,6 @@
 import type { AgeGroupId, CharacterId, Zodiac } from "./characters";
 import type { Locale } from "./i18n";
+import type { SceneId } from "./scenes";
 
 export type Turn = {
   speaker: "user" | "character";
@@ -20,6 +21,7 @@ export type Session = {
   ageGroup: AgeGroupId;
   zodiac: Zodiac;
   locale: Locale;
+  scene: SceneId;
   turns: Turn[];
   ended: boolean;
   endReason?: string;

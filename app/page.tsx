@@ -13,6 +13,7 @@ import {
 } from "@/lib/characters";
 import { saveSession } from "@/lib/session";
 import { LOCALES, T, getLocale, setLocale, type Locale } from "@/lib/i18n";
+import { SCENE_LIST, type SceneId } from "@/lib/scenes";
 
 function ageLabelFor(t: (typeof T)["en"], id: AgeGroupId): string {
   if (id === "young") return t.ageYoung;
@@ -27,6 +28,7 @@ export default function OnboardingPage() {
   const [name, setName] = useState("");
   const [ageGroup, setAgeGroup] = useState<AgeGroupId>("young");
   const [zodiac, setZodiac] = useState<Zodiac>("aries");
+  const [scene, setScene] = useState<SceneId>("afterparty");
 
   useEffect(() => {
     setLocaleState(getLocale());
@@ -52,6 +54,7 @@ export default function OnboardingPage() {
       ageGroup,
       zodiac,
       locale,
+      scene,
       turns: [],
       ended: false,
     });
@@ -119,36 +122,23 @@ export default function OnboardingPage() {
         <div className="mt-7 w-full">
           <div className="text-sm font-medium text-zinc-700 mb-2.5 dark:text-zinc-300">{t.scene}</div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            <button
-              type="button"
-              className="rounded-2xl bg-purple-600 px-3 py-2.5 text-sm font-medium text-white shadow-md shadow-purple-500/30 cursor-pointer"
-            >
-              🥂 Afterparty
-            </button>
-            <button
-              type="button"
-              disabled
-              title={t.sceneComingSoon}
-              className="rounded-2xl bg-white border border-zinc-200 px-3 py-2.5 text-sm font-medium text-zinc-400 opacity-60 cursor-not-allowed dark:bg-zinc-900 dark:border-zinc-800"
-            >
-              🛗 Elevator
-            </button>
-            <button
-              type="button"
-              disabled
-              title={t.sceneComingSoon}
-              className="rounded-2xl bg-white border border-zinc-200 px-3 py-2.5 text-sm font-medium text-zinc-400 opacity-60 cursor-not-allowed dark:bg-zinc-900 dark:border-zinc-800"
-            >
-              💘 Tinder Date
-            </button>
-            <button
-              type="button"
-              disabled
-              title={t.sceneComingSoon}
-              className="rounded-2xl bg-white border border-zinc-200 px-3 py-2.5 text-sm font-medium text-zinc-400 opacity-60 cursor-not-allowed dark:bg-zinc-900 dark:border-zinc-800"
-            >
-              💼 Job Interview
-            </button>
+            {SCENE_LIST.map((s) => {
+              const selected = scene === s.id;
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => setScene(s.id)}
+                  className={`rounded-2xl px-3 py-2.5 text-sm font-medium cursor-pointer transition-all duration-200 ${
+                    selected
+                      ? "bg-purple-600 text-white shadow-md shadow-purple-500/30"
+                      : "bg-white border border-zinc-200 text-zinc-700 hover:border-zinc-300 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-300"
+                  }`}
+                >
+                  {s.emoji} {s.labels[locale]}
+                </button>
+              );
+            })}
           </div>
         </div>
 

@@ -6,6 +6,7 @@ import { CHARACTERS, ZODIACS, avatarUrl } from "@/lib/characters";
 import { loadSession, saveSession, type Session, type Turn } from "@/lib/session";
 import type { Analytics, TranscriptLine } from "@/lib/analytics";
 import { T, type Locale } from "@/lib/i18n";
+import { SCENES, genderForCharacter } from "@/lib/scenes";
 import AnalyticsModal from "@/components/AnalyticsModal";
 
 type Status = "idle" | "recording" | "thinking" | "speaking" | "ended";
@@ -153,6 +154,7 @@ export default function ScenePage() {
   const audioContextRef = useRef<AudioContext | null>(null);
   const vadIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const analyticsRequestedRef = useRef(false);
+  const openingPlayedRef = useRef(false);
 
   useEffect(() => {
     const s = loadSession();
@@ -161,9 +163,13 @@ export default function ScenePage() {
       router.replace("/");
       return;
     }
-    const withLocale: Session = { ...s, locale: s.locale ?? "en" };
-    setSession(withLocale);
-    if (withLocale.ended) setStatus("ended");
+    const hydrated: Session = {
+      ...s,
+      locale: s.locale ?? "en",
+      scene: s.scene ?? "afterparty",
+    };
+    setSession(hydrated);
+    if (hydrated.ended) setStatus("ended");
   }, [router]);
 
   const fetchAnalytics = async (sessionForAnalytics: Session) => {
@@ -182,7 +188,7 @@ export default function ScenePage() {
           transcript,
           characterName: sessionForAnalytics.characterName,
           characterPersona: persona,
-          scene: "a tech afterparty",
+          scene: sessionForAnalytics.scene,
           locale: sessionForAnalytics.locale,
         }),
       });
@@ -205,6 +211,34 @@ export default function ScenePage() {
     analyticsRequestedRef.current = true;
     void fetchAnalytics(session);
   }, [status, session]);
+
+  useEffect(() => {
+    if (!session || openingPlayedRef.current) return;
+    if (session.ended) {
+      openingPlayedRef.current = true;
+      return;
+    }
+    if (session.turns.length > 0) {
+      openingPlayedRef.current = true;
+      return;
+    }
+    const sceneDef = SCENES[session.scene];
+    if (!sceneDef.openings) {
+      openingPlayedRef.current = true;
+      return;
+    }
+    openingPlayedRef.current = true;
+    const gender = genderForCharacter(session.characterId);
+    const opening = sceneDef.openings[gender][session.locale];
+    const charTurn: Turn = { speaker: "character", text: opening };
+    const updated: Session = { ...session, turns: [charTurn] };
+    setSession(updated);
+    saveSession(updated);
+    setStatus("speaking");
+    void speakReply(opening, session.characterId === "max", session.locale).finally(() => {
+      setStatus("idle");
+    });
+  }, [session]);
 
   const cleanupRecording = () => {
     if (vadIntervalRef.current) {
@@ -301,6 +335,7 @@ export default function ScenePage() {
       form.append("ageGroup", session.ageGroup);
       form.append("zodiac", session.zodiac);
       form.append("locale", session.locale);
+      form.append("scene", session.scene);
       form.append(
         "history",
         JSON.stringify(session.turns.map((t) => ({ speaker: t.speaker, text: t.text }))),
@@ -361,6 +396,7 @@ export default function ScenePage() {
       ageGroup: session.ageGroup,
       zodiac: session.zodiac,
       locale: session.locale,
+      scene: session.scene,
       turns: [],
       ended: false,
     };
@@ -371,6 +407,7 @@ export default function ScenePage() {
     setAnalyticsError(null);
     setAnalyticsLoading(false);
     analyticsRequestedRef.current = false;
+    openingPlayedRef.current = false;
   };
 
   if (!session) {
@@ -381,6 +418,8 @@ export default function ScenePage() {
   const ageLabel =
     session.ageGroup === "young" ? t.ageYoung : session.ageGroup === "mid" ? t.ageMid : t.ageOlder;
   const zodiacLabel = ZODIACS.find((z) => z.id === session.zodiac)?.label ?? session.zodiac;
+  const sceneDef = SCENES[session.scene];
+  const sceneLabel = `${sceneDef.emoji} ${sceneDef.labels[session.locale]}`;
   const showModal = status === "ended" && session.turns.length > 0;
 
   return (
@@ -390,7 +429,7 @@ export default function ScenePage() {
         <img src={avatarUrl(session.characterId)} alt={session.characterName} className="h-12 w-12 rounded-full object-cover bg-zinc-100 dark:bg-zinc-800" />
         <div className="min-w-0">
           <div className="font-bold tracking-tight truncate text-zinc-900 dark:text-zinc-50">{session.characterName}</div>
-          <div className="text-sm text-zinc-500 truncate">{ageLabel} · {zodiacLabel} · {t.afterparty}</div>
+          <div className="text-sm text-zinc-500 truncate">{ageLabel} · {zodiacLabel} · {sceneLabel}</div>
         </div>
         <button onClick={handleNewCharacter} className="ml-auto text-xs font-medium text-zinc-500 cursor-pointer rounded-full px-3 py-1.5 transition-all duration-200 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100">
           {t.restart}
