@@ -59,7 +59,7 @@ export default function OnboardingPage() {
   };
 
   return (
-    <main className="relative flex flex-1 flex-col items-center justify-center px-6 py-8">
+    <main className="relative flex flex-1 flex-col items-center justify-center px-6 pt-20 pb-8 sm:py-8">
       <div className="absolute right-4 top-4 flex gap-1 rounded-full bg-white/80 backdrop-blur px-1 py-1 shadow-sm ring-1 ring-black/5">
         {LOCALES.map((l) => {
           const active = locale === l.id;
