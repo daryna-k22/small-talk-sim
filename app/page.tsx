@@ -111,7 +111,7 @@ export default function OnboardingPage() {
                 <img
                   src={avatarUrl(c.id)}
                   alt={label}
-                  className="mb-3 h-20 w-20 rounded-full bg-zinc-100 transition-transform duration-300 group-hover:scale-105 dark:bg-zinc-800"
+                  className="mb-3 h-20 w-20 rounded-full object-cover bg-zinc-100 transition-transform duration-300 group-hover:scale-105 dark:bg-zinc-800"
                 />
                 <div className="text-lg font-semibold tracking-tight">{label}</div>
               </button>

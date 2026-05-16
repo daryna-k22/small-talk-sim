@@ -119,6 +119,5 @@ ${buildExtraBlock(params)}`,
 };
 
 export function avatarUrl(id: CharacterId): string {
-  const seed = id === "max" ? "max-it" : "olena-mk";
-  return `https://api.dicebear.com/9.x/adventurer/svg?seed=${seed}`;
+  return id === "max" ? "/him.jpg" : "/her.jpg";
 }

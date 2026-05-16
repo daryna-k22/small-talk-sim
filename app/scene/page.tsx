@@ -387,7 +387,7 @@ export default function ScenePage() {
     <main className="flex-1 flex flex-col px-4 py-6 max-w-2xl mx-auto w-full animate-fade-in-up">
       <header className="flex items-center gap-3 mb-6 rounded-3xl border border-black/5 bg-white/70 backdrop-blur px-4 py-3 shadow-sm dark:border-white/5 dark:bg-zinc-900/70">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={avatarUrl(session.characterId)} alt={session.characterName} className="h-12 w-12 rounded-full bg-zinc-100 ring-2 ring-white shadow-md dark:bg-zinc-800 dark:ring-zinc-900" />
+        <img src={avatarUrl(session.characterId)} alt={session.characterName} className="h-12 w-12 rounded-full object-cover bg-zinc-100 ring-2 ring-white shadow-md dark:bg-zinc-800 dark:ring-zinc-900" />
         <div className="min-w-0">
           <div className="font-semibold tracking-tight truncate">{session.characterName}</div>
           <div className="text-xs text-zinc-500 truncate">{ageLabel} · {zodiacLabel} · {t.afterparty}</div>

@@ -85,7 +85,7 @@ export default function AnalyticsModal({
             <img
               src={avatarUrl}
               alt={characterName}
-              className="mb-5 h-20 w-20 rounded-full bg-zinc-100 ring-4 ring-orange-100 animate-soft-glow dark:bg-zinc-900 dark:ring-orange-500/20"
+              className="mb-5 h-20 w-20 rounded-full object-cover bg-zinc-100 ring-4 ring-orange-100 animate-soft-glow dark:bg-zinc-900 dark:ring-orange-500/20"
             />
             <div className="h-7 w-7 mb-4 animate-spin rounded-full border-2 border-orange-200 border-t-orange-500" />
             <div className="text-sm text-zinc-500 max-w-xs leading-relaxed">{t.aThinkingAbout(characterName)}</div>
@@ -118,7 +118,7 @@ export default function AnalyticsModal({
                 <img
                   src={avatarUrl}
                   alt={characterName}
-                  className="absolute -bottom-2 -right-2 h-12 w-12 rounded-full bg-white ring-4 ring-white shadow-lg dark:bg-zinc-900 dark:ring-zinc-950"
+                  className="absolute -bottom-2 -right-2 h-12 w-12 rounded-full object-cover bg-white ring-4 ring-white shadow-lg dark:bg-zinc-900 dark:ring-zinc-950"
                 />
               </div>
               <div className="mt-5 text-lg font-medium text-zinc-900 leading-snug max-w-md dark:text-zinc-100">
@@ -148,7 +148,7 @@ export default function AnalyticsModal({
             <div className="mb-8 rounded-3xl bg-gradient-to-br from-violet-50 via-purple-50 to-fuchsia-50 p-5 sm:p-6 ring-1 ring-purple-200/40 dark:from-violet-950/40 dark:via-purple-950/30 dark:to-fuchsia-950/30 dark:ring-purple-500/20">
               <div className="flex items-start gap-4">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={avatarUrl} alt={characterName} className="h-14 w-14 flex-shrink-0 rounded-full bg-white ring-2 ring-white shadow-md dark:bg-zinc-900 dark:ring-zinc-900" />
+                <img src={avatarUrl} alt={characterName} className="h-14 w-14 flex-shrink-0 rounded-full object-cover bg-white ring-2 ring-white shadow-md dark:bg-zinc-900 dark:ring-zinc-900" />
                 <div className="flex-1">
                   <div className="mb-2 text-[10px] uppercase tracking-wider font-semibold text-purple-600 dark:text-purple-300">
                     {t.aThoughtLabel(characterName)}
