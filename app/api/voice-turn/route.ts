@@ -1,5 +1,12 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { CHARACTERS, type CharacterId } from "@/lib/characters";
+import {
+  AGE_GROUPS,
+  CHARACTERS,
+  ZODIACS,
+  type AgeGroupId,
+  type CharacterId,
+  type Zodiac,
+} from "@/lib/characters";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -7,6 +14,9 @@ export const maxDuration = 30;
 const MODEL = "gemini-2.5-flash";
 
 type HistoryTurn = { speaker: "user" | "character"; text: string };
+
+const VALID_AGE_GROUPS = new Set(AGE_GROUPS.map((g) => g.id));
+const VALID_ZODIACS = new Set(ZODIACS.map((z) => z.id));
 
 export async function POST(req: Request) {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -18,6 +28,8 @@ export async function POST(req: Request) {
   const audio = form.get("audio");
   const characterId = form.get("characterId") as CharacterId | null;
   const characterName = (form.get("characterName") as string | null) ?? "";
+  const ageGroupRaw = form.get("ageGroup") as string | null;
+  const zodiacRaw = form.get("zodiac") as string | null;
   const historyJson = (form.get("history") as string | null) ?? "[]";
 
   if (!(audio instanceof Blob) || audio.size === 0) {
@@ -26,6 +38,14 @@ export async function POST(req: Request) {
   if (!characterId || !(characterId in CHARACTERS)) {
     return Response.json({ error: "invalid characterId" }, { status: 400 });
   }
+  if (!ageGroupRaw || !VALID_AGE_GROUPS.has(ageGroupRaw as AgeGroupId)) {
+    return Response.json({ error: "invalid ageGroup" }, { status: 400 });
+  }
+  if (!zodiacRaw || !VALID_ZODIACS.has(zodiacRaw as Zodiac)) {
+    return Response.json({ error: "invalid zodiac" }, { status: 400 });
+  }
+  const ageGroup = ageGroupRaw as AgeGroupId;
+  const zodiac = zodiacRaw as Zodiac;
 
   let history: HistoryTurn[] = [];
   try {
@@ -35,17 +55,21 @@ export async function POST(req: Request) {
   }
 
   const character = CHARACTERS[characterId];
-  const finalName = characterName.trim() || character.defaultName;
+  const finalName = characterName.trim() || character.cardLabel;
 
   const buf = Buffer.from(await audio.arrayBuffer());
   const audioBase64 = buf.toString("base64");
   const mimeType = audio.type || "audio/webm";
 
   const historyText = history.length
-    ? history.map((t) => (t.speaker === "user" ? `User: ${t.text}` : `${finalName}: ${t.text}`)).join("\n")
+    ? history
+        .map((t) => (t.speaker === "user" ? `User: ${t.text}` : `${finalName}: ${t.text}`))
+        .join("\n")
     : "(this is the very first thing the user says)";
 
-  const taskPrompt = `${character.systemPrompt(finalName)}
+  const personaPrompt = character.systemPrompt({ name: finalName, ageGroup, zodiac });
+
+  const taskPrompt = `${personaPrompt}
 
 Conversation so far:
 ${historyText}

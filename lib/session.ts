@@ -1,4 +1,4 @@
-import type { CharacterId } from "./characters";
+import type { AgeGroupId, CharacterId, Zodiac } from "./characters";
 
 export type Turn = {
   speaker: "user" | "character";
@@ -16,6 +16,8 @@ export type VoiceAnalysis = {
 export type Session = {
   characterId: CharacterId;
   characterName: string;
+  ageGroup: AgeGroupId;
+  zodiac: Zodiac;
   turns: Turn[];
   ended: boolean;
   endReason?: string;

@@ -31,7 +31,8 @@ export default function ScenePage() {
 
   useEffect(() => {
     const s = loadSession();
-    if (!s) {
+    if (!s || !s.ageGroup || !s.zodiac) {
+      if (typeof window !== "undefined") window.localStorage.removeItem("smalltalk-session");
       router.replace("/");
       return;
     }
@@ -100,6 +101,8 @@ export default function ScenePage() {
       form.append("audio", audioBlob, "turn.webm");
       form.append("characterId", session.characterId);
       form.append("characterName", session.characterName);
+      form.append("ageGroup", session.ageGroup);
+      form.append("zodiac", session.zodiac);
       form.append(
         "history",
         JSON.stringify(session.turns.map((t) => ({ speaker: t.speaker, text: t.text }))),
