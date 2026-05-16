@@ -60,7 +60,7 @@ export type Dict = {
 
 export const T: Record<Locale, Dict> = {
   en: {
-    subtitle: "Practice small talk at a tech afterparty. Who are you walking up to?",
+    subtitle: "Who do you want to practice small talk with?",
     him: "Him",
     her: "Her",
     age: "Age",
@@ -99,7 +99,7 @@ export const T: Record<Locale, Dict> = {
     aCouldntLoad: "Couldn't load analytics",
   },
   uk: {
-    subtitle: "Тренуй small talk на афтерпаті. До кого підходимо?",
+    subtitle: "З ким хочеш потренувати small talk?",
     him: "Він",
     her: "Вона",
     age: "Вік",

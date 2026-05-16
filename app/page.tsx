@@ -81,15 +81,15 @@ export default function OnboardingPage() {
         })}
       </div>
 
-      <div className="w-full max-w-2xl animate-fade-in-up">
-        <header className="mb-8 text-center">
+      <div className="w-full max-w-2xl mx-auto flex flex-col items-center text-center animate-fade-in-up">
+        <header className="mb-8">
           <h1 className="text-5xl md:text-6xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
             Small Talk Simulator
           </h1>
           <p className="mt-3 text-base text-zinc-600 max-w-md mx-auto dark:text-zinc-400">{t.subtitle}</p>
         </header>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="w-full grid gap-4 sm:grid-cols-2">
           {Object.values(CHARACTERS).map((c) => {
             const selected = picked === c.id;
             const label = c.id === "max" ? t.him : t.her;
@@ -116,7 +116,7 @@ export default function OnboardingPage() {
           })}
         </div>
 
-        <div className="mt-7">
+        <div className="mt-7 w-full">
           <div className="text-sm font-medium text-zinc-700 mb-2.5 dark:text-zinc-300">{t.scene}</div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <button
@@ -152,9 +152,9 @@ export default function OnboardingPage() {
           </div>
         </div>
 
-        <div className="mt-5">
+        <div className="mt-5 w-full">
           <div className="text-sm font-medium text-zinc-700 mb-2.5 dark:text-zinc-300">{t.age}</div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap justify-center gap-2">
             {AGE_GROUPS.map((g) => {
               const selected = ageGroup === g.id;
               return (
@@ -175,7 +175,7 @@ export default function OnboardingPage() {
           </div>
         </div>
 
-        <div className="mt-5">
+        <div className="mt-5 w-full">
           <div className="text-sm font-medium text-zinc-700 mb-2.5 dark:text-zinc-300">{t.zodiac}</div>
           <select
             value={zodiac}
@@ -190,7 +190,7 @@ export default function OnboardingPage() {
           </select>
         </div>
 
-        <div className="mt-5">
+        <div className="mt-5 w-full">
           <div className="text-sm font-medium text-zinc-700 mb-2.5 dark:text-zinc-300">{t.name}</div>
           <input
             value={name}
@@ -204,7 +204,7 @@ export default function OnboardingPage() {
           type="button"
           onClick={start}
           disabled={!canStart}
-          className={`mt-7 w-full rounded-2xl py-4 px-6 text-lg font-semibold transition-all duration-300 ${
+          className={`mt-7 w-full max-w-md mx-auto rounded-2xl py-4 px-6 text-lg font-semibold transition-all duration-300 ${
             canStart
               ? "bg-purple-600 text-white shadow-lg shadow-purple-500/30 cursor-pointer hover:bg-purple-700 hover:scale-[1.01] active:scale-[0.99]"
               : "bg-zinc-300 text-zinc-500 cursor-not-allowed dark:bg-zinc-800 dark:text-zinc-500"
